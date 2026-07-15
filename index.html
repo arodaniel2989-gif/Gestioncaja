@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gestión Caja - Bierport</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f5f5f4;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --text: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #a8a29e;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-bg: #eff6ff;
+  --accent-border: #bfdbfe;
+  --accent-text: #1e40af;
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --success-text: #15803d;
+  --warning: #d97706;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-text: #b91c1c;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--surface);
+  min-height: 100vh;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+/* ===== HEADER ===== */
+.header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-brand h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.header-brand p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.header-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.select-cajero {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.select-cajero:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.turno-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+
+.turno-toggle button {
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.turno-toggle button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 84px;
+  z-index: 9;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 12px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex: 1;
+  position: relative;
+}
+
+.tab:hover { color: var(--text); }
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  height: 18px;
+  line-height: 18px;
+  background: var(--accent);
+  color: white;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 4px;
+  vertical-align: 1px;
+}
+
+/* ===== PANELS ===== */
+.panel { display: none; padding: 1.5rem; }
+.panel.active { display: block; }
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 1.25rem 0 0.75rem;
+}
+.section-title:first-child { margin-top: 0; }
+
+/* ===== FORM ===== */
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.field input[type="number"], .field .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ===== METRICS ===== */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 1rem 0 1.25rem;
+}
+
+.metric {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+
+.metric.accent {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.metric.accent .metric-label { color: var(--accent-text); }
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.metric.accent .metric-value { color: var(--accent-text); }
+.metric.big .metric-value { font-size: 24px; }
+
+/* ===== LISTS ===== */
+.list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.list-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.list-row:last-child { border-bottom: none; }
+.list-row:hover { background: var(--surface-2); }
+
+.list-row .list-main { flex: 1; }
+.list-row .list-num { color: var(--text-muted); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+.list-row .list-title { color: var(--text); }
+.list-row .list-amount { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--text); }
+
+.list-row .btn-del {
+  padding: 4px 8px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  background: transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.list-row .btn-del:hover { background: var(--danger-bg); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 11px 20px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  width: 100%;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-block { width: 100%; }
+
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { flex: 1; }
+
+/* ===== ALERTS ===== */
+.alert {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.alert-success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+
+.alert-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.alert-info {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border: 1px solid var(--accent-border);
+}
+
+/* ===== DENOMINACIONES TABLE ===== */
+.denom-table {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.denom-header {
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.denom-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 8px;
+}
+
+.denom-row:last-child { border-bottom: none; }
+
+.denom-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.denom-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: right;
+  width: 100%;
+}
+
+.denom-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+.denom-subtotal {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.denom-subtotal.has-value { color: var(--text); font-weight: 500; }
+
+.denom-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--accent-bg);
+  border-top: 2px solid var(--accent-border);
+}
+
+.denom-total-label { font-size: 13px; font-weight: 500; color: var(--accent-text); }
+.denom-total-value { font-size: 20px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--accent-text); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 100;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  max-width: 400px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal-body { padding: 1rem 1.5rem; }
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+}
+
+.modal-footer .btn { flex: 1; }
+
+/* ===== TICKET PREVIEW ===== */
+.ticket-preview {
+  background: white;
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  padding: 16px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #000;
+  line-height: 1.5;
+}
+
+.ticket-brand {
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.ticket-sub {
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.ticket-divider {
+  border-top: 1px dashed #999;
+  margin: 8px -14px;
+}
+
+.ticket-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+  font-size: 11px;
+}
+
+.ticket-line .k { color: #666; }
+.ticket-line .v { color: #000; font-weight: 500; }
+
+.ticket-amount-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #666;
+  text-align: center;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.ticket-amount {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin: 4px 0 6px;
+}
+
+.ticket-notes {
+  font-size: 10px;
+  color: #666;
+  word-wrap: break-word;
+}
+
+.ticket-sign-space { min-height: 40px; }
+
+.ticket-sign-line {
+  border-top: 1px solid #000;
+  padding-top: 3px;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: #666;
+}
+
+.ticket-section {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  text-align: center;
+  letter-spacing: 1px;
+  margin: 4px 0 6px;
+}
+
+.ticket-item-row {
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  margin: 2px 0;
+}
+
+.ticket-item-row .n { width: 50px; color: #666; }
+.ticket-item-row .t { flex: 1; }
+.ticket-item-row .m { text-align: right; font-weight: 500; }
+
+.ticket-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid #000;
+}
+
+/* ===== NOTIFICATIONS ===== */
+.notif-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.notif {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: white;
+  animation: slideIn 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.notif.success { background: var(--success); }
+.notif.error { background: var(--danger); }
+.notif.info { background: var(--accent); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ===== MEDIOS DE PAGO (CIERRE) ===== */
+.medio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.medio-card {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.medio-card.auto {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+}
+
+.medio-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.medio-card.auto .medio-label { color: var(--success-text); }
+
+.medio-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0;
+}
+
+.medio-input:focus { outline: none; }
+.medio-input:disabled { cursor: not-allowed; }
+.medio-card.auto .medio-input { color: var(--success-text); }
+
+.medio-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.medio-card.auto .medio-hint {
+  color: var(--success-text);
+  border-top-color: var(--success-border);
+  opacity: 0.7;
+}
+
+@media (max-width: 480px) {
+  .header-top { flex-direction: column; }
+  .header-controls { width: 100%; }
+  .select-cajero { flex: 1; }
+  .panel { padding: 1rem; }
+  .tab { padding: 12px 6px; font-size: 12px; }
+  .denom-header, .denom-row { grid-template-columns: 80px 1fr 100px; padding: 6px 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- ==================== HEADER ==================== -->
+<header class="header">
+  <div class="header-top">
+    <div class="header-brand">
+      <h1>Gestión Caja</h1>
+      <p id="datetime">Cargando...</p>
+    </div>
+    <div class="header-controls">
+      <select class="select-cajero" id="cajero" onchange="onCajeroChange()">
+        <option value="Silvio">Silvio</option>
+        <option value="Tony">Tony</option>
+        <option value="Aldana">Aldana</option>
+        <option value="Flor">Flor</option>
+        <option value="Daniel">Daniel</option>
+      </select>
+      <div class="turno-toggle">
+        <button id="btn-manana" class="active" onclick="setTurno('Mañana')">Mañana</button>
+        <button id="btn-tarde" onclick="setTurno('Tarde')">Tarde</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== TABS ==================== -->
+<nav class="tabs">
+  <button class="tab active" data-tab="saldo" onclick="switchTab('saldo')">Saldo SUBE</button>
+  <button class="tab" data-tab="transf" onclick="switchTab('transf')">Transferencias<span class="tab-badge" id="badge-transf" style="display:none;">0</span></button>
+  <button class="tab" data-tab="retiros" onclick="switchTab('retiros')">Retiros<span class="tab-badge" id="badge-retiros" style="display:none;">0</span></button>
+  <button class="tab" data-tab="cierre" onclick="switchTab('cierre')">Cierre</button>
+</nav>
+
+<main>
+
+<!-- ==================== PANEL SALDO SUBE ==================== -->
+<div id="panel-saldo" class="panel active">
+  <div id="sube-alert-cierre" class="alert alert-warning" style="display:none;">
+    <span>Ya se registró un saldo SUBE para este turno hoy. Un nuevo registro creará una entrada adicional.</span>
+  </div>
+
+  <div class="section-title">Saldos de CARGA PLUS</div>
+
+  <div class="field">
+    <label>Saldo inicial</label>
+    <input type="number" id="sube-inicial" placeholder="$0" step="1" inputmode="numeric" oninput="onSubeChange()">
+  </div>
+
+  <div class="field">
+    <label>Saldo final</label>
+    <input type="number" id="sube-final" placeholder="$0" step="1" inputmode="numeric" oninput="onSubeChange()">
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-label">Inicial</div>
+      <div class="metric-value" id="sube-display-ini">$0</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Final</div>
+      <div class="metric-value" id="sube-display-fin">$0</div>
+    </div>
+    <div class="metric accent big">
+      <div class="metric-label">A facturar</div>
+      <div class="metric-value" id="sube-display-fac">$0</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="confirmarSaldoSube()">Confirmar y guardar</button>
+</div>
+
+<!-- ==================== PANEL TRANSFERENCIAS ==================== -->
+<div id="panel-transf" class="panel">
+  <div class="section-title">Agregar transferencia</div>
+
+  <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 1rem;">
+    <input type="number" id="transf-input" class="mono" placeholder="$0" step="0.01" inputmode="decimal"
+           style="padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-family: 'JetBrains Mono', monospace; font-size: 14px;"
+           onkeypress="if(event.key==='Enter') agregarTransferencia()">
+    <button class="btn" style="width: auto; background: var(--accent); color: white; border-color: var(--accent);" onclick="agregarTransferencia()">Agregar</button>
+  </div>
+
+  <div class="section-title">Transferencias del turno</div>
+  <div class="list" id="transf-list">
+    <div class="list-empty">Sin transferencias aún</div>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-label">Cantidad</div>
+      <div class="metric-value" id="transf-count">0</div>
+    </div>
+    <div class="metric accent big">
+      <div class="metric-label">Total</div>
+      <div class="metric-value" id="transf-total">$0</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="guardarYLimpiarTransferencias()">Guardar y limpiar</button>
+</div>
+
+<!-- ==================== PANEL RETIROS ==================== -->
+<div id="panel-retiros" class="panel">
+  <div class="section-title">Nuevo retiro</div>
+
+  <div class="field">
+    <label>Tipo de retiro</label>
+    <select id="retiro-tipo" onchange="onTipoRetiroChange()">
+      <option value="Caja recaudadora">Caja recaudadora</option>
+      <option value="Otro retiro">Otro retiro</option>
+      <option value="Cierre">Cierre (sin ticket)</option>
+    </select>
+  </div>
+
+  <div id="retiro-otros" style="display: none;">
+    <div class="field">
+      <label>Concepto</label>
+      <input type="text" id="retiro-concepto" placeholder="Pago proveedor, adelanto, etc.">
+    </div>
+    <div class="field">
+      <label>Autoriza</label>
+      <input type="text" id="retiro-autoriza" placeholder="Nombre y apellido">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Notas (opcional)</label>
+    <textarea id="retiro-notas" placeholder="Observaciones..."></textarea>
+  </div>
+
+  <div class="section-title">Denominaciones</div>
+
+  <div class="denom-table" id="denom-table">
+    <div class="denom-header">
+      <div>Billete</div>
+      <div>Cantidad</div>
+      <div style="text-align: right;">Subtotal</div>
+    </div>
+  </div>
+
+  <div class="denom-total" style="border-radius: 0 0 var(--radius) var(--radius); margin-top: -1rem; margin-bottom: 1rem;">
+    <div class="denom-total-label">Total del retiro</div>
+    <div class="denom-total-value" id="retiro-total">$0</div>
+  </div>
+
+  <button class="btn btn-primary" onclick="abrirModalRetiro()">Confirmar retiro</button>
+
+  <div class="section-title" style="margin-top: 2rem;">Retiros del turno</div>
+  <div class="list" id="retiros-list">
+    <div class="list-empty">Sin retiros registrados</div>
+  </div>
+</div>
+
+<!-- ==================== PANEL CIERRE ==================== -->
+<div id="panel-cierre" class="panel">
+  <div id="cierre-alert" class="alert alert-info">
+    <span>Los campos automáticos se calculan a partir de las otras pestañas. Completá tarjetas y confirmá el cierre.</span>
+  </div>
+
+  <div id="cierre-warn" class="alert alert-warning" style="display:none;">
+    <span id="cierre-warn-text">Ya se registró un cierre para este turno hoy.</span>
+  </div>
+
+  <div class="section-title">Medios de pago</div>
+
+  <div class="medio-grid">
+    <div class="medio-card auto">
+      <div class="medio-label">Saldo SUBE</div>
+      <input type="text" class="medio-input" id="cierre-sube" value="$0" disabled>
+      <div class="medio-hint">Pestaña Saldo SUBE</div>
+    </div>
+    <div class="medio-card auto">
+      <div class="medio-label">Transferencias</div>
+      <input type="text" class="medio-input" id="cierre-transf" value="$0" disabled>
+      <div class="medio-hint">Pestaña Transferencias</div>
+    </div>
+    <div class="medio-card auto">
+      <div class="medio-label">Total retiros</div>
+      <input type="text" class="medio-input" id="cierre-total-retiros" value="$0" disabled>
+      <div class="medio-hint">Suma de todos los retiros</div>
+    </div>
+    <div class="medio-card auto">
+      <div class="medio-label">Efectivo</div>
+      <input type="text" class="medio-input" id="cierre-efectivo" value="$0" disabled>
+      <div class="medio-hint">Retiro tipo Cierre</div>
+    </div>
+    <div class="medio-card">
+      <div class="medio-label">Tarjeta crédito</div>
+      <input type="number" class="medio-input" id="cierre-credito" placeholder="$0" step="1" inputmode="numeric" oninput="guardarCierreLocal()">
+      <div class="medio-hint">Ingresar manualmente</div>
+    </div>
+    <div class="medio-card">
+      <div class="medio-label">Tarjeta débito</div>
+      <input type="number" class="medio-input" id="cierre-debito" placeholder="$0" step="1" inputmode="numeric" oninput="guardarCierreLocal()">
+      <div class="medio-hint">Ingresar manualmente</div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Notas del cierre (opcional)</label>
+    <textarea id="cierre-notas" placeholder="Observaciones..." oninput="guardarCierreLocal()"></textarea>
+  </div>
+
+  <button class="btn btn-primary" onclick="confirmarCierre()">Confirmar cierre e imprimir</button>
+</div>
+
+</main>
+
+</div>
+
+<!-- ==================== MODAL RETIRO PREVIEW ==================== -->
+<div class="modal-overlay" id="modal-retiro">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Vista previa del ticket</h2>
+    </div>
+    <div class="modal-body">
+      <div class="ticket-preview" id="ticket-preview">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="cerrarModalRetiro()">Cancelar</button>
+      <button class="btn btn-primary" style="width: auto;" onclick="confirmarRetiro()" id="btn-confirmar-retiro">Guardar e imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== NOTIFICATIONS ==================== -->
+<div class="notif-container" id="notifs"></div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRdHHQ2ZjJYFMx5QAfrHYIcb5DZCTfU9foSPLFXz_bXCd3AMPQMPQfw5pxON_3SZtIWw/exec';
+
+const CAJEROS_INICIALES = {
+  'Silvio': 'S', 'Tony': 'T', 'Aldana': 'A', 'Flor': 'F', 'Daniel': 'D'
+};
+
+const DENOMINACIONES = [100, 200, 500, 1000, 2000, 10000, 20000];
+
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let state = {
+  cajero: 'Silvio',
+  turno: 'Mañana',
+  sube: { inicial: 0, final: 0, aFacturar: 0 },
+  transferencias: [],
+  retiros: [],
+  cierre: { credito: 0, debito: 0, notas: '', confirmado: false }
+};
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+function fmtMoneda(n) {
+  const num = Number(n) || 0;
+  return '$' + new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 0, maximumFractionDigits: 2
+  }).format(num);
+}
+
+function fmtNumeroPlano(n) {
+  const num = Number(n) || 0;
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 0, maximumFractionDigits: 2
+  }).format(num);
+}
+
+function ahoraTexto() {
+  const now = new Date();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const dia = dias[now.getDay()];
+  const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return `${dia}, ${fecha} · ${hora} hs`;
+}
+
+function inicial(cajero) {
+  return CAJEROS_INICIALES[cajero] || '?';
+}
+
+function siglaTurno() {
+  return state.turno === 'Mañana' ? 'TM' : 'TT';
+}
+
+function proximoNumeroRetiro() {
+  let max = 0;
+  state.retiros.forEach(r => {
+    if (r.turno === state.turno) {
+      const num = parseInt(String(r.numero).split('-')[0], 10);
+      if (!isNaN(num) && num > max) max = num;
+    }
+  });
+  return max + 1;
+}
+
+function numeroRetiro() {
+  return `${proximoNumeroRetiro()}-${siglaTurno()}-${inicial(state.cajero)}`;
+}
+
+function notif(mensaje, tipo) {
+  const cont = document.getElementById('notifs');
+  const n = document.createElement('div');
+  n.className = 'notif ' + (tipo || 'info');
+  n.textContent = mensaje;
+  cont.appendChild(n);
+  setTimeout(() => n.remove(), 3500);
+}
+
+// ============================================================
+// PERSISTENCIA LOCAL
+// ============================================================
+function guardarLocal() {
+  try {
+    localStorage.setItem('gc_state', JSON.stringify(state));
+  } catch (e) { console.error('LocalStorage error:', e); }
+}
+
+function cargarLocal() {
+  try {
+    const saved = localStorage.getItem('gc_state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state = { ...state, ...parsed };
+    }
+  } catch (e) { console.error('Load error:', e); }
+}
+
+// ============================================================
+// APPS SCRIPT
+// ============================================================
+async function enviarAppsScript(datos) {
+  if (APPS_SCRIPT_URL.includes('REEMPLAZAR')) {
+    notif('URL de Apps Script no configurada', 'error');
+    return { status: 'error', message: 'URL no configurada' };
+  }
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(datos)
+    });
+    return await response.json();
+  } catch (err) {
+    console.error('Error enviando:', err);
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+async function consultarAppsScript(params) {
+  if (APPS_SCRIPT_URL.includes('REEMPLAZAR')) return { status: 'error' };
+  try {
+    const url = APPS_SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+    const response = await fetch(url);
+    return await response.json();
+  } catch (err) {
+    console.error('Error consultando:', err);
+    return { status: 'error', message: err.toString() };
+  }
+}
+
+// ============================================================
+// HEADER Y NAVEGACIÓN
+// ============================================================
+function actualizarDatetime() {
+  document.getElementById('datetime').textContent = ahoraTexto();
+}
+
+function onCajeroChange() {
+  state.cajero = document.getElementById('cajero').value;
+  guardarLocal();
+}
+
+function setTurno(t) {
+  state.turno = t;
+  document.getElementById('btn-manana').classList.toggle('active', t === 'Mañana');
+  document.getElementById('btn-tarde').classList.toggle('active', t === 'Tarde');
+  guardarLocal();
+  actualizarPanelCierre();
+  verificarCierreExistente();
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${id}"]`).classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'cierre') actualizarPanelCierre();
+}
+
+function actualizarBadges() {
+  const bt = document.getElementById('badge-transf');
+  const br = document.getElementById('badge-retiros');
+  if (state.transferencias.length > 0) {
+    bt.textContent = state.transferencias.length;
+    bt.style.display = 'inline-block';
+  } else { bt.style.display = 'none'; }
+  const rTurno = state.retiros.filter(r => r.turno === state.turno).length;
+  if (rTurno > 0) {
+    br.textContent = rTurno;
+    br.style.display = 'inline-block';
+  } else { br.style.display = 'none'; }
+}
+
+// ============================================================
+// SALDO SUBE
+// ============================================================
+function onSubeChange() {
+  state.sube.inicial = parseFloat(document.getElementById('sube-inicial').value) || 0;
+  state.sube.final = parseFloat(document.getElementById('sube-final').value) || 0;
+  state.sube.aFacturar = Math.abs(state.sube.inicial - state.sube.final);
+  document.getElementById('sube-display-ini').textContent = fmtMoneda(state.sube.inicial);
+  document.getElementById('sube-display-fin').textContent = fmtMoneda(state.sube.final);
+  document.getElementById('sube-display-fac').textContent = fmtMoneda(state.sube.aFacturar);
+  guardarLocal();
+  actualizarPanelCierre();
+}
+
+async function confirmarSaldoSube() {
+  if (state.sube.aFacturar === 0) {
+    notif('Ingresá los saldos primero', 'error');
+    return;
+  }
+  const resp = await enviarAppsScript({
+    tipo: 'saldo_sube',
+    cajero: state.cajero,
+    turno: state.turno,
+    saldoInicial: state.sube.inicial,
+    saldoFinal: state.sube.final,
+    aFacturar: state.sube.aFacturar
+  });
+  if (resp.status === 'success') {
+    notif('Saldo SUBE registrado', 'success');
+    document.getElementById('sube-alert-cierre').style.display = 'flex';
+    document.getElementById('sube-inicial').value = '';
+    document.getElementById('sube-final').value = '';
+    state.sube = { inicial: 0, final: 0, aFacturar: 0 };
+    onSubeChange();
+  } else {
+    notif('Error: ' + resp.message, 'error');
+  }
+}
+
+// ============================================================
+// TRANSFERENCIAS
+// ============================================================
+function agregarTransferencia() {
+  const input = document.getElementById('transf-input');
+  const monto = parseFloat(input.value);
+  if (!monto || monto <= 0) {
+    notif('Ingresá un monto válido', 'error');
+    return;
+  }
+  state.transferencias.push({ id: Date.now(), monto: monto });
+  input.value = '';
+  input.focus();
+  guardarLocal();
+  actualizarListaTransf();
+  actualizarBadges();
+  actualizarPanelCierre();
+}
+
+function eliminarTransferencia(id) {
+  state.transferencias = state.transferencias.filter(t => t.id !== id);
+  guardarLocal();
+  actualizarListaTransf();
+  actualizarBadges();
+  actualizarPanelCierre();
+}
+
+function actualizarListaTransf() {
+  const lista = document.getElementById('transf-list');
+  if (state.transferencias.length === 0) {
+    lista.innerHTML = '<div class="list-empty">Sin transferencias aún</div>';
+  } else {
+    lista.innerHTML = state.transferencias.map((t, i) => `
+      <div class="list-row">
+        <div class="list-num">#${i + 1}</div>
+        <div class="list-main"><div class="list-title">Transferencia</div></div>
+        <div class="list-amount">${fmtMoneda(t.monto)}</div>
+        <button class="btn-del" onclick="eliminarTransferencia(${t.id})">Eliminar</button>
+      </div>
+    `).join('');
+  }
+  const total = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  document.getElementById('transf-count').textContent = state.transferencias.length;
+  document.getElementById('transf-total').textContent = fmtMoneda(total);
+}
+
+async function guardarYLimpiarTransferencias() {
+  if (state.transferencias.length === 0) {
+    notif('No hay transferencias para guardar', 'error');
+    return;
+  }
+  const total = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  if (!confirm(`¿Guardar ${state.transferencias.length} transferencias ($${fmtNumeroPlano(total)}) y limpiar la lista?`)) return;
+
+  const resp = await enviarAppsScript({
+    tipo: 'transferencias_lote',
+    cajero: state.cajero,
+    turno: state.turno,
+    lista: state.transferencias,
+    total: total
+  });
+  if (resp.status === 'success') {
+    notif('Transferencias guardadas', 'success');
+    state.transferencias = [];
+    guardarLocal();
+    actualizarListaTransf();
+    actualizarBadges();
+    actualizarPanelCierre();
+  } else {
+    notif('Error: ' + resp.message, 'error');
+  }
+}
+
+// ============================================================
+// RETIROS
+// ============================================================
+function buildDenomTable() {
+  const cont = document.getElementById('denom-table');
+  const filas = DENOMINACIONES.map(v => `
+    <div class="denom-row">
+      <div class="denom-label">$${fmtNumeroPlano(v)}</div>
+      <input type="number" class="denom-input" data-denom="${v}"
+             min="0" step="1" placeholder="0"
+             oninput="actualizarSubtotales()"
+             onkeydown="onDenomKeydown(event, ${v})">
+      <div class="denom-subtotal" data-sub="${v}">$0</div>
+    </div>
+  `).join('');
+  cont.insertAdjacentHTML('beforeend', filas);
+}
+
+function actualizarSubtotales() {
+  let total = 0;
+  DENOMINACIONES.forEach(v => {
+    const input = document.querySelector(`.denom-input[data-denom="${v}"]`);
+    const cant = parseInt(input.value, 10) || 0;
+    const sub = cant * v;
+    total += sub;
+    const subEl = document.querySelector(`.denom-subtotal[data-sub="${v}"]`);
+    subEl.textContent = fmtMoneda(sub);
+    subEl.classList.toggle('has-value', sub > 0);
+  });
+  document.getElementById('retiro-total').textContent = fmtMoneda(total);
+}
+
+function onDenomKeydown(ev, denom) {
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+    const idx = DENOMINACIONES.indexOf(denom);
+    if (idx < DENOMINACIONES.length - 1) {
+      const next = document.querySelector(`.denom-input[data-denom="${DENOMINACIONES[idx + 1]}"]`);
+      next.focus();
+      next.select();
+    } else {
+      abrirModalRetiro();
+    }
+  }
+}
+
+function onTipoRetiroChange() {
+  const tipo = document.getElementById('retiro-tipo').value;
+  document.getElementById('retiro-otros').style.display = (tipo === 'Otro retiro') ? 'block' : 'none';
+}
+
+function calcularDenominaciones() {
+  const denoms = {};
+  let total = 0;
+  DENOMINACIONES.forEach(v => {
+    const cant = parseInt(document.querySelector(`.denom-input[data-denom="${v}"]`).value, 10) || 0;
+    denoms[v] = cant;
+    total += cant * v;
+  });
+  return { denominaciones: denoms, monto: total };
+}
+
+function abrirModalRetiro() {
+  const { monto } = calcularDenominaciones();
+  if (monto === 0) {
+    notif('Ingresá al menos un billete', 'error');
+    return;
+  }
+  const tipo = document.getElementById('retiro-tipo').value;
+  const concepto = document.getElementById('retiro-concepto').value.trim();
+  const autoriza = document.getElementById('retiro-autoriza').value.trim();
+
+  if (tipo === 'Otro retiro') {
+    if (!concepto) { notif('Completá el concepto', 'error'); return; }
+    if (!autoriza) { notif('Completá quién autoriza', 'error'); return; }
+  }
+
+  if (tipo === 'Cierre') {
+    const existeCierre = state.retiros.some(r => r.tipoRetiro === 'Cierre' && r.turno === state.turno);
+    if (existeCierre) {
+      if (!confirm('Ya existe un retiro tipo Cierre para este turno. ¿Registrar otro?')) return;
+    }
+  }
+
+  renderTicketPreview();
+
+  const btnConfirmar = document.getElementById('btn-confirmar-retiro');
+  const modalTitle = document.getElementById('modal-title');
+  if (tipo === 'Cierre') {
+    btnConfirmar.textContent = 'Guardar (sin ticket)';
+    modalTitle.textContent = 'Confirmar retiro de cierre';
+  } else {
+    btnConfirmar.textContent = 'Guardar e imprimir';
+    modalTitle.textContent = 'Vista previa del ticket';
+  }
+
+  document.getElementById('modal-retiro').classList.add('active');
+}
+
+function cerrarModalRetiro() {
+  document.getElementById('modal-retiro').classList.remove('active');
+}
+
+function renderTicketPreview() {
+  const tipo = document.getElementById('retiro-tipo').value;
+  const concepto = document.getElementById('retiro-concepto').value.trim();
+  const autoriza = document.getElementById('retiro-autoriza').value.trim();
+  const notas = document.getElementById('retiro-notas').value.trim();
+  const { monto } = calcularDenominaciones();
+  const numero = numeroRetiro();
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  const conceptoFinal = tipo === 'Otro retiro' ? concepto : tipo;
+
+  let html = `
+    <div class="ticket-brand">BIERPORT</div>
+    <div class="ticket-sub">${tipo === 'Cierre' ? 'Retiro de cierre' : 'Retiro de caja'}</div>
+    <div class="ticket-divider"></div>
+    <div class="ticket-line"><span class="k">Retiro</span><span class="v">${numero}</span></div>
+    <div class="ticket-line"><span class="k">Fecha</span><span class="v">${fecha}</span></div>
+    <div class="ticket-line"><span class="k">Hora</span><span class="v">${hora} hs</span></div>
+    <div class="ticket-divider"></div>
+    <div class="ticket-line"><span class="k">Cajero</span><span class="v">${state.cajero}</span></div>
+    <div class="ticket-line"><span class="k">Turno</span><span class="v">${state.turno}</span></div>
+    <div class="ticket-line"><span class="k">Concepto</span><span class="v">${conceptoFinal}</span></div>
+  `;
+  if (tipo === 'Otro retiro' && autoriza) {
+    html += `<div class="ticket-line"><span class="k">Autoriza</span><span class="v">${autoriza}</span></div>`;
+  }
+  if (notas) {
+    html += `<div class="ticket-divider"></div><div class="ticket-notes">Notas: ${notas}</div>`;
+  }
+  html += `
+    <div class="ticket-divider"></div>
+    <div class="ticket-amount-label">Monto</div>
+    <div class="ticket-amount">${fmtMoneda(monto)}</div>
+    <div class="ticket-divider"></div>
+    <div class="ticket-sign-space"></div>
+    <div class="ticket-sign-line">Firma del responsable</div>
+  `;
+
+  if (tipo === 'Cierre') {
+    html += `<div style="margin-top: 10px; padding: 8px; background: #fef3c7; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 11px; color: #92400e; text-align: center;">Este retiro no se imprime. Se guarda en Sheets y su monto pasa a Efectivo en el Cierre.</div>`;
+  }
+
+  document.getElementById('ticket-preview').innerHTML = html;
+}
+
+async function confirmarRetiro() {
+  const tipo = document.getElementById('retiro-tipo').value;
+  const concepto = document.getElementById('retiro-concepto').value.trim();
+  const autoriza = document.getElementById('retiro-autoriza').value.trim();
+  const notas = document.getElementById('retiro-notas').value.trim();
+  const { denominaciones, monto } = calcularDenominaciones();
+  const numero = numeroRetiro();
+  const now = new Date();
+
+  const retiro = {
+    numero: numero,
+    tipoRetiro: tipo,
+    concepto: tipo === 'Otro retiro' ? concepto : tipo,
+    autoriza: autoriza,
+    notas: notas,
+    monto: monto,
+    denominaciones: denominaciones,
+    cajero: state.cajero,
+    turno: state.turno,
+    fecha: now.toLocaleDateString('es-AR'),
+    hora: now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+    timestamp: now.toISOString()
+  };
+
+  const resp = await enviarAppsScript({ tipo: 'retiro', ...retiro });
+  if (resp.status !== 'success') {
+    notif('Error: ' + resp.message, 'error');
+    return;
+  }
+
+  state.retiros.push(retiro);
+  guardarLocal();
+
+  if (tipo !== 'Cierre') {
+    generarPDFRetiro(retiro);
+    navigator.clipboard.writeText(fmtNumeroPlano(monto)).catch(() => {});
+    notif(`Retiro ${numero} guardado y copiado`, 'success');
+  } else {
+    notif(`Retiro de Cierre registrado: ${fmtMoneda(monto)}`, 'success');
+  }
+
+  document.getElementById('retiro-tipo').value = 'Caja recaudadora';
+  document.getElementById('retiro-concepto').value = '';
+  document.getElementById('retiro-autoriza').value = '';
+  document.getElementById('retiro-notas').value = '';
+  document.querySelectorAll('.denom-input').forEach(i => i.value = '');
+  onTipoRetiroChange();
+  actualizarSubtotales();
+  cerrarModalRetiro();
+  actualizarListaRetiros();
+  actualizarBadges();
+  actualizarPanelCierre();
+}
+
+function actualizarListaRetiros() {
+  const lista = document.getElementById('retiros-list');
+  const delTurno = state.retiros.filter(r => r.turno === state.turno);
+  if (delTurno.length === 0) {
+    lista.innerHTML = '<div class="list-empty">Sin retiros registrados</div>';
+    return;
+  }
+  lista.innerHTML = delTurno.map(r => `
+    <div class="list-row">
+      <div class="list-num">${r.numero}</div>
+      <div class="list-main"><div class="list-title">${r.concepto || r.tipoRetiro}</div></div>
+      <div class="list-amount">${fmtMoneda(r.monto)}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// PDF - Retiros
+// ============================================================
+function generarPDFRetiro(retiro) {
+  const { jsPDF } = window.jspdf;
+  const height = retiro.tipoRetiro === 'Caja recaudadora' ? 130 : (retiro.notas ? 150 : 135);
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, height] });
+
+  let y = 8;
+  const W = 80;
+  const CENTER = W / 2;
+  const LEFT = 5;
+  const RIGHT = W - 5;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('BIERPORT', CENTER, y, { align: 'center' });
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Retiro de caja', CENTER, y, { align: 'center' });
+  y += 4;
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(LEFT, y, RIGHT, y);
+  doc.setLineDashPattern([], 0);
+  y += 4;
+
+  doc.setFontSize(9);
+  const kv = (k, v) => {
+    doc.setFont('helvetica', 'normal');
+    doc.text(k, LEFT, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(v), RIGHT, y, { align: 'right' });
+    y += 4;
+  };
+
+  kv('Retiro', retiro.numero);
+  kv('Fecha', retiro.fecha);
+  kv('Hora', retiro.hora + ' hs');
+
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(LEFT, y, RIGHT, y);
+  doc.setLineDashPattern([], 0);
+  y += 4;
+
+  kv('Cajero', retiro.cajero);
+  kv('Turno', retiro.turno);
+  kv('Concepto', retiro.concepto);
+  if (retiro.tipoRetiro === 'Otro retiro' && retiro.autoriza) {
+    kv('Autoriza', retiro.autoriza);
+  }
+
+  if (retiro.notas) {
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(LEFT, y, RIGHT, y);
+    doc.setLineDashPattern([], 0);
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const lineas = doc.splitTextToSize('Notas: ' + retiro.notas, W - 10);
+    lineas.forEach(l => { doc.text(l, LEFT, y); y += 3.5; });
+  }
+
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(LEFT, y, RIGHT, y);
+  doc.setLineDashPattern([], 0);
+  y += 5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('MONTO', CENTER, y, { align: 'center' });
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(fmtMoneda(retiro.monto), CENTER, y, { align: 'center' });
+  y += 4;
+
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(LEFT, y, RIGHT, y);
+  doc.setLineDashPattern([], 0);
+  y += 12;
+
+  doc.line(LEFT + 10, y, RIGHT - 10, y);
+  y += 3.5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text('Firma del responsable', CENTER, y, { align: 'center' });
+
+  doc.autoPrint();
+  window.open(doc.output('bloburl'), '_blank');
+}
+
+// ============================================================
+// CIERRE
+// ============================================================
+function actualizarPanelCierre() {
+  const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  const delTurno = state.retiros.filter(r => r.turno === state.turno);
+  const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+  const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
+  const efectivo = retiroCierre ? retiroCierre.monto : 0;
+
+  document.getElementById('cierre-sube').value = fmtMoneda(state.sube.aFacturar);
+  document.getElementById('cierre-transf').value = fmtMoneda(totalTransf);
+  document.getElementById('cierre-total-retiros').value = fmtMoneda(totalRetiros);
+  document.getElementById('cierre-efectivo').value = fmtMoneda(efectivo);
+  document.getElementById('cierre-credito').value = state.cierre.credito || '';
+  document.getElementById('cierre-debito').value = state.cierre.debito || '';
+  document.getElementById('cierre-notas').value = state.cierre.notas || '';
+}
+
+function guardarCierreLocal() {
+  state.cierre.credito = parseFloat(document.getElementById('cierre-credito').value) || 0;
+  state.cierre.debito = parseFloat(document.getElementById('cierre-debito').value) || 0;
+  state.cierre.notas = document.getElementById('cierre-notas').value;
+  guardarLocal();
+}
+
+async function verificarCierreExistente() {
+  const resp = await consultarAppsScript({ tipo: 'cierre_existe', turno: state.turno });
+  const warn = document.getElementById('cierre-warn');
+  const text = document.getElementById('cierre-warn-text');
+  if (resp.status === 'success' && resp.data && resp.data.existe) {
+    text.textContent = `Ya se registró un cierre para el ${state.turno} de hoy a las ${resp.data.hora} (${resp.data.cajero}).`;
+    warn.style.display = 'flex';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+async function confirmarCierre() {
+  guardarCierreLocal();
+  const delTurno = state.retiros.filter(r => r.turno === state.turno);
+  const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+  const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
+  const efectivo = retiroCierre ? retiroCierre.monto : 0;
+  const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+
+  if (delTurno.length === 0) {
+    if (!confirm('No hay retiros registrados en este turno. ¿Confirmar cierre igual?')) return;
+  }
+
+  const datos = {
+    tipo: 'cierre',
+    cajero: state.cajero,
+    turno: state.turno,
+    saldoSube: state.sube.aFacturar,
+    transferencias: totalTransf,
+    totalRetiros: totalRetiros,
+    efectivo: efectivo,
+    tarjetaCredito: state.cierre.credito,
+    tarjetaDebito: state.cierre.debito,
+    cantidadRetiros: delTurno.length,
+    notas: state.cierre.notas
+  };
+
+  const resp = await enviarAppsScript(datos);
+  if (resp.status !== 'success') {
+    notif('Error: ' + resp.message, 'error');
+    return;
+  }
+
+  generarPDFCierre(datos, delTurno);
+  notif('Cierre guardado', 'success');
+
+  if (confirm('Cierre guardado. ¿Limpiar datos del turno? (Recomendado para no duplicar en el próximo cierre)')) {
+    state.sube = { inicial: 0, final: 0, aFacturar: 0 };
+    state.transferencias = [];
+    state.retiros = state.retiros.filter(r => r.turno !== state.turno);
+    state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false };
+    guardarLocal();
+    document.getElementById('sube-inicial').value = '';
+    document.getElementById('sube-final').value = '';
+    onSubeChange();
+    actualizarListaTransf();
+    actualizarListaRetiros();
+    actualizarBadges();
+    actualizarPanelCierre();
+    verificarCierreExistente();
+  }
+}
+
+function generarPDFCierre(datos, retiros) {
+  const { jsPDF } = window.jspdf;
+  const alturaBase = 100;
+  const alturaRetiros = retiros.length * 4;
+  const alturaMedios = 30;
+  const alturaNotas = datos.notas ? 15 : 0;
+  const height = alturaBase + alturaRetiros + alturaMedios + alturaNotas;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, height] });
+  let y = 8;
+  const W = 80;
+  const CENTER = W / 2;
+  const LEFT = 5;
+  const RIGHT = W - 5;
+
+  const dashLine = () => {
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(LEFT, y, RIGHT, y);
+    doc.setLineDashPattern([], 0);
+    y += 4;
+  };
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('BIERPORT', CENTER, y, { align: 'center' });
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Cierre de caja', CENTER, y, { align: 'center' });
+  y += 4;
+  dashLine();
+
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  const kv = (k, v) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(k, LEFT, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(v), RIGHT, y, { align: 'right' });
+    y += 4;
+  };
+
+  kv('Fecha', fecha);
+  kv('Turno', datos.turno);
+  kv('Cajero', datos.cajero);
+  kv('Hora cierre', hora + ' hs');
+  dashLine();
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('RETIROS DEL TURNO', CENTER, y, { align: 'center' });
+  y += 5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  retiros.forEach(r => {
+    const conceptoCorto = (r.concepto || r.tipoRetiro).substring(0, 20);
+    doc.text(r.numero, LEFT, y);
+    doc.text(conceptoCorto, LEFT + 18, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmtMoneda(r.monto), RIGHT, y, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    y += 3.5;
+  });
+
+  y += 1;
+  doc.setLineWidth(0.3);
+  doc.line(LEFT, y, RIGHT, y);
+  y += 4;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('Total retiros', LEFT, y);
+  doc.text(fmtMoneda(datos.totalRetiros), RIGHT, y, { align: 'right' });
+  y += 4;
+  dashLine();
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('MEDIOS DE PAGO', CENTER, y, { align: 'center' });
+  y += 5;
+
+  kv('Efectivo', fmtMoneda(datos.efectivo));
+  kv('Transferencias', fmtMoneda(datos.transferencias));
+  kv('Tarjeta crédito', fmtMoneda(datos.tarjetaCredito));
+  kv('Tarjeta débito', fmtMoneda(datos.tarjetaDebito));
+  kv('SUBE', fmtMoneda(datos.saldoSube));
+  dashLine();
+
+  if (datos.notas) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const lineas = doc.splitTextToSize('Notas: ' + datos.notas, W - 10);
+    lineas.forEach(l => { doc.text(l, LEFT, y); y += 3.5; });
+    dashLine();
+  }
+
+  y += 10;
+  doc.line(LEFT + 10, y, RIGHT - 10, y);
+  y += 3.5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.text('Firma del responsable', CENTER, y, { align: 'center' });
+
+  doc.autoPrint();
+  window.open(doc.output('bloburl'), '_blank');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  cargarLocal();
+
+  document.getElementById('cajero').value = state.cajero;
+  document.getElementById('btn-manana').classList.toggle('active', state.turno === 'Mañana');
+  document.getElementById('btn-tarde').classList.toggle('active', state.turno === 'Tarde');
+
+  document.getElementById('sube-inicial').value = state.sube.inicial || '';
+  document.getElementById('sube-final').value = state.sube.final || '';
+
+  buildDenomTable();
+  onSubeChange();
+  actualizarSubtotales();
+  actualizarListaTransf();
+  actualizarListaRetiros();
+  actualizarBadges();
+  actualizarPanelCierre();
+  actualizarDatetime();
+  setInterval(actualizarDatetime, 60000);
+  verificarCierreExistente();
+
+  document.getElementById('modal-retiro').addEventListener('click', e => {
+    if (e.target.id === 'modal-retiro') cerrarModalRetiro();
+  });
+}
+
+init();
+</script>
+
+</body>
+</html>
