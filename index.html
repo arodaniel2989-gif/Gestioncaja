@@ -762,12 +762,14 @@ body {
   }
 
   /* Ticket: área de impresión de 77mm (con margen de seguridad dentro del
-     rollo de 80mm), largo mínimo 210mm (crece si el contenido es más largo),
-     letras más grandes y en negro puro para que salgan nítidas en la
-     impresora térmica */
+     rollo de 80mm), largo mínimo 170mm. Si el contenido entra en 170mm se
+     centra verticalmente (espacio en blanco arriba y abajo); si es más
+     largo (p. ej. un cierre con muchos retiros) ocupa los 170mm completos
+     más el excedente que haga falta, sin recortar nada. Letras más grandes
+     y en negro puro para que salgan nítidas en la impresora térmica. */
   #print-area-content.ticket-preview {
     width: 77mm;
-    min-height: 210mm;
+    min-height: 170mm;
     margin: 0 auto;
     padding: 4mm 3mm;
     border: none;
@@ -775,6 +777,9 @@ body {
     font-size: 13px;
     line-height: 1.6;
     color: #000 !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   #print-area-content .ticket-brand { font-size: 17px; }
   #print-area-content .ticket-sub,
