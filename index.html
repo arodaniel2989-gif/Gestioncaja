@@ -471,6 +471,10 @@ body {
 .denom-total-label { font-size: 13px; font-weight: 500; color: var(--accent-text); }
 .denom-total-value { font-size: 20px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--accent-text); }
 
+.denom-total-danger { background: var(--danger-bg); border-top-color: var(--danger); }
+.denom-total-danger .denom-total-label,
+.denom-total-danger .denom-total-value { color: var(--danger); }
+
 /* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
@@ -768,7 +772,6 @@ body {
      más el excedente que haga falta, sin recortar nada. Letras más grandes
      y en negro puro para que salgan nítidas en la impresora térmica. */
   #print-area-content.ticket-preview {
-    position: relative;
     width: 77mm;
     min-height: 170mm;
     margin: 0 auto;
@@ -780,21 +783,16 @@ body {
     color: #000 !important;
     display: flex;
     flex-direction: column;
-    justify-content: center;
   }
-  /* Marca al pie, exactamente en el borde inferior de los 170mm. Muchas
-     impresoras térmicas con corte automático recortan el papel donde
-     termina la última tinta detectada, ignorando el espacio en blanco que
-     pide el navegador (esto es lo que estaba pasando). Con una línea real
-     ahí, la impresora encuentra "tinta" en el borde y no corta antes. */
-  #print-area-content.ticket-preview::after {
-    content: '';
-    position: absolute;
-    left: 3mm;
-    right: 3mm;
-    bottom: 2mm;
-    border-top: 1px solid #000;
-  }
+  /* Dos bloques independientes dentro del ticket: "contenido" (todo menos
+     la firma) se centra solo, con margin:auto arriba y abajo — el reparto
+     de espacio libre es simétrico así que su centrado no depende de cuánto
+     mida el bloque de firma. "firma" queda inmediatamente después, sin
+     margen propio, lo que la deja pegada al borde inferior real de los
+     170mm (siempre hay tinta ahí, evita que la impresora recorte antes por
+     ahorro de papel). Si el ticket es más largo que 170mm, el margen
+     automático se reduce a 0 y todo fluye normalmente sin recortar nada. */
+  #print-area-content .ticket-contenido { margin: auto 0; }
   #print-area-content .ticket-brand { font-size: 17px; }
   #print-area-content .ticket-sub,
   #print-area-content .ticket-line,
@@ -954,9 +952,13 @@ body {
     </div>
   </div>
 
-  <div class="denom-total" style="border-radius: 0 0 var(--radius) var(--radius); margin-top: -1rem; margin-bottom: 1rem;">
+  <div class="denom-total" style="margin-top: -1rem; margin-bottom: 1px;">
     <div class="denom-total-label">Total del retiro</div>
     <div class="denom-total-value" id="retiro-total">$0</div>
+  </div>
+  <div class="denom-total" id="retiro-cant-billetes-row" style="border-radius: 0 0 var(--radius) var(--radius); border-top: none; margin-bottom: 1rem;">
+    <div class="denom-total-label">Cantidad de billetes (máx. <span id="retiro-max-billetes"></span>)</div>
+    <div class="denom-total-value" id="retiro-cant-billetes">0</div>
   </div>
 
   <button class="btn btn-primary" onclick="abrirModalRetiro()">Confirmar retiro</button>
@@ -1102,6 +1104,10 @@ const CAJEROS_INICIALES = {
 };
 
 const DENOMINACIONES = [100, 200, 500, 1000, 2000, 10000, 20000];
+
+// Máximo de billetes físicos permitidos en un solo retiro. Si se supera,
+// hay que hacer varios retiros más chicos (se bloquea "Confirmar retiro").
+const MAX_BILLETES_POR_RETIRO = 100;
 
 // ============================================================
 // ESTADO GLOBAL
@@ -1461,16 +1467,22 @@ function buildDenomTable() {
 
 function actualizarSubtotales() {
   let total = 0;
+  let cantidadBilletes = 0;
   DENOMINACIONES.forEach(v => {
     const input = document.querySelector(`.denom-input[data-denom="${v}"]`);
     const cant = parseInt(input.value, 10) || 0;
     const sub = cant * v;
     total += sub;
+    cantidadBilletes += cant;
     const subEl = document.querySelector(`.denom-subtotal[data-sub="${v}"]`);
     subEl.textContent = fmtMoneda(sub);
     subEl.classList.toggle('has-value', sub > 0);
   });
   document.getElementById('retiro-total').textContent = fmtMoneda(total);
+
+  document.getElementById('retiro-cant-billetes').textContent = cantidadBilletes;
+  const superaLimite = cantidadBilletes > MAX_BILLETES_POR_RETIRO;
+  document.getElementById('retiro-cant-billetes-row').classList.toggle('denom-total-danger', superaLimite);
 }
 
 function onDenomKeydown(ev, denom) {
@@ -1495,18 +1507,24 @@ function onTipoRetiroChange() {
 function calcularDenominaciones() {
   const denoms = {};
   let total = 0;
+  let cantidadBilletes = 0;
   DENOMINACIONES.forEach(v => {
     const cant = parseInt(document.querySelector(`.denom-input[data-denom="${v}"]`).value, 10) || 0;
     denoms[v] = cant;
     total += cant * v;
+    cantidadBilletes += cant;
   });
-  return { denominaciones: denoms, monto: total };
+  return { denominaciones: denoms, monto: total, cantidadBilletes };
 }
 
 function abrirModalRetiro() {
-  const { monto } = calcularDenominaciones();
+  const { monto, cantidadBilletes } = calcularDenominaciones();
   if (monto === 0) {
     notif('Ingresá al menos un billete', 'error');
+    return;
+  }
+  if (cantidadBilletes > MAX_BILLETES_POR_RETIRO) {
+    notif(`Superaste el máximo de ${MAX_BILLETES_POR_RETIRO} billetes (van ${cantidadBilletes}). Dividí este retiro en varios más chicos.`, 'error');
     return;
   }
   const tipo = document.getElementById('retiro-tipo').value;
@@ -1556,7 +1574,7 @@ function renderTicketPreview() {
 
   const conceptoFinal = tipo === 'Otro retiro' ? concepto : tipo;
 
-  let html = `
+  let html = `<div class="ticket-contenido">
     <div class="ticket-brand">BIERPORT</div>
     <div class="ticket-sub">${tipo === 'Cierre' ? 'Retiro de cierre' : 'Retiro de caja'}</div>
     <div class="ticket-divider"></div>
@@ -1575,9 +1593,12 @@ function renderTicketPreview() {
     <div class="ticket-divider"></div>
     <div class="ticket-amount-label">Monto</div>
     <div class="ticket-amount">${fmtMoneda(monto)}</div>
+  </div>
+  <div class="ticket-firma">
     <div class="ticket-divider"></div>
     <div class="ticket-sign-space"></div>
     <div class="ticket-sign-line">Firma del responsable</div>
+  </div>
   `;
 
   if (tipo === 'Cierre') {
@@ -1855,7 +1876,7 @@ function abrirModalPreviewCierre(datos, retiros) {
   const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-  let html = `
+  let html = `<div class="ticket-contenido">
     <div class="ticket-brand">BIERPORT</div>
     <div class="ticket-sub">Cierre de caja</div>
     <div class="ticket-divider"></div>
@@ -1887,9 +1908,12 @@ function abrirModalPreviewCierre(datos, retiros) {
   }
 
   html += `
+  </div>
+  <div class="ticket-firma">
     <div class="ticket-divider"></div>
     <div class="ticket-sign-space"></div>
     <div class="ticket-sign-line">Firma del responsable</div>
+  </div>
   `;
 
   document.getElementById('preview-cierre-content').innerHTML = html;
@@ -2027,6 +2051,7 @@ function init() {
   document.getElementById('sube-final').value = state.sube.final || '';
 
   buildDenomTable();
+  document.getElementById('retiro-max-billetes').textContent = MAX_BILLETES_POR_RETIRO;
   onSubeChange();
   actualizarSubtotales();
   actualizarListaTransf();
