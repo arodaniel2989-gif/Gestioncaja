@@ -768,6 +768,7 @@ body {
      más el excedente que haga falta, sin recortar nada. Letras más grandes
      y en negro puro para que salgan nítidas en la impresora térmica. */
   #print-area-content.ticket-preview {
+    position: relative;
     width: 77mm;
     min-height: 170mm;
     margin: 0 auto;
@@ -780,6 +781,19 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+  }
+  /* Marca al pie, exactamente en el borde inferior de los 170mm. Muchas
+     impresoras térmicas con corte automático recortan el papel donde
+     termina la última tinta detectada, ignorando el espacio en blanco que
+     pide el navegador (esto es lo que estaba pasando). Con una línea real
+     ahí, la impresora encuentra "tinta" en el borde y no corta antes. */
+  #print-area-content.ticket-preview::after {
+    content: '';
+    position: absolute;
+    left: 3mm;
+    right: 3mm;
+    bottom: 2mm;
+    border-top: 1px solid #000;
   }
   #print-area-content .ticket-brand { font-size: 17px; }
   #print-area-content .ticket-sub,
