@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Gestión Caja - Bierport</title>
+<title>Gesti√≥n Caja - Bierport</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -746,7 +746,7 @@ body {
 <header class="header">
   <div class="header-top">
     <div class="header-brand">
-      <h1>Gestión Caja</h1>
+      <h1>Gesti√≥n Caja</h1>
       <p id="datetime">Cargando...</p>
     </div>
     <div class="header-controls">
@@ -758,7 +758,7 @@ body {
         <option value="Daniel">Daniel</option>
       </select>
       <div class="turno-toggle">
-        <button id="btn-manana" class="active" onclick="setTurno('Mañana')">Mañana</button>
+        <button id="btn-manana" class="active" onclick="setTurno('Ma√±ana')">Ma√±ana</button>
         <button id="btn-tarde" onclick="setTurno('Tarde')">Tarde</button>
       </div>
     </div>
@@ -778,7 +778,7 @@ body {
 <!-- ==================== PANEL SALDO SUBE ==================== -->
 <div id="panel-saldo" class="panel active">
   <div id="sube-alert-cierre" class="alert alert-warning" style="display:none;">
-    <span>Ya se registró un saldo SUBE para este turno hoy. Un nuevo registro creará una entrada adicional.</span>
+    <span>Ya se registr√≥ un saldo SUBE para este turno hoy. Un nuevo registro crear√° una entrada adicional.</span>
   </div>
 
   <div class="section-title">Saldos de CARGA PLUS</div>
@@ -824,7 +824,7 @@ body {
 
   <div class="section-title">Transferencias del turno</div>
   <div class="list" id="transf-list">
-    <div class="list-empty">Sin transferencias aún</div>
+    <div class="list-empty">Sin transferencias a√∫n</div>
   </div>
 
   <div class="metric-grid">
@@ -896,16 +896,16 @@ body {
 <!-- ==================== PANEL CIERRE ==================== -->
 <div id="panel-cierre" class="panel">
   <div id="cierre-alert" class="alert alert-info">
-    <span>Los campos automáticos se calculan a partir de las otras pestañas. Completá tarjetas y confirmá el cierre.</span>
+    <span>Los campos autom√°ticos se calculan a partir de las otras pesta√±as. Complet√° tarjetas y confirm√° el cierre.</span>
   </div>
 
   <!-- ALERTA DE CIERRE DUPLICADO (BLOQUEANTE) -->
   <div id="cierre-duplicado-alert" class="alert" style="display:none; background: var(--danger-bg); border: 2px solid var(--danger); padding: 1.5rem; margin-bottom: 1.5rem;">
     <div style="font-size: 16px; font-weight: 600; color: var(--danger); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px;">
-      🚫 CIERRE YA EXISTE - BLOQUEADO
+      üö´ CIERRE YA EXISTE - BLOQUEADO
     </div>
     <div style="font-size: 13px; color: var(--danger-text); line-height: 1.6; margin-bottom: 1rem;">
-      Ya existe un cierre confirmado para el <strong id="cierre-dup-turno">Turno Mañana</strong> de hoy. No se puede cargar más datos ni registrar otro cierre bajo estas condiciones.
+      Ya existe un cierre confirmado para el <strong id="cierre-dup-turno">Turno Ma√±ana</strong> de hoy. No se puede cargar m√°s datos ni registrar otro cierre bajo estas condiciones.
     </div>
     <div style="background: rgba(220,38,38,0.1); padding: 12px; border-radius: 8px; margin-bottom: 1rem; font-size: 12px;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
@@ -927,23 +927,23 @@ body {
       <div style="display: flex; gap: 10px; align-items: flex-start;">
         <input type="checkbox" id="confirm-override" onchange="toggleBtnDesbloqueo()" style="margin-top: 3px; cursor: pointer; width: 18px; height: 18px;">
         <label for="confirm-override" style="font-size: 13px; line-height: 1.5; color: var(--text-secondary); cursor: pointer;">
-          Entiendo que estoy <strong style="color: var(--danger);">creando un cierre duplicado</strong>. He revisado el cierre anterior y necesito hacer uno nuevo. <strong style="color: var(--danger);">Asumo la responsabilidad</strong> de esta acción.
+          Entiendo que estoy <strong style="color: var(--danger);">creando un cierre duplicado</strong>. He revisado el cierre anterior y necesito hacer uno nuevo. <strong style="color: var(--danger);">Asumo la responsabilidad</strong> de esta acci√≥n.
         </label>
       </div>
     </div>
 
     <div style="display: flex; gap: 8px;">
-      <button class="btn" style="flex: 1; background: var(--surface-2); border: 1px solid var(--border);" onclick="limpiarCheckboxDesbloqueo()">Volver atrás</button>
-      <button class="btn" id="btn-desbloqueo" style="flex: 1; background: var(--danger); color: white; border: 1px solid var(--danger); cursor: not-allowed; opacity: 0.5;" disabled onclick="abrirModalConfirmacionFinal(true)">🔓 Desbloquear</button>
+      <button class="btn" style="flex: 1; background: var(--surface-2); border: 1px solid var(--border);" onclick="limpiarCheckboxDesbloqueo()">Volver atr√°s</button>
+      <button class="btn" id="btn-desbloqueo" style="flex: 1; background: var(--danger); color: white; border: 1px solid var(--danger); cursor: not-allowed; opacity: 0.5;" disabled onclick="abrirModalConfirmacionFinal(true)">üîì Desbloquear</button>
     </div>
 
     <div style="background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--accent-text); line-height: 1.5; margin-top: 1rem;">
-      💡 <strong>Nota:</strong> Si desbloqueas, se registrará un cierre duplicado en Sheets. Usá solo en caso de error o corrección necesaria.
+      üí° <strong>Nota:</strong> Si desbloqueas, se registrar√° un cierre duplicado en Sheets. Us√° solo en caso de error o correcci√≥n necesaria.
     </div>
   </div>
 
   <div id="cierre-warn" class="alert alert-warning" style="display:none;">
-    <span id="cierre-warn-text">Ya se registró un cierre para este turno hoy.</span>
+    <span id="cierre-warn-text">Ya se registr√≥ un cierre para este turno hoy.</span>
   </div>
 
   <div class="section-title">Medios de pago</div>
@@ -952,12 +952,12 @@ body {
     <div class="medio-card auto">
       <div class="medio-label">Saldo SUBE</div>
       <input type="text" class="medio-input" id="cierre-sube" value="$0" disabled>
-      <div class="medio-hint">Pestaña Saldo SUBE</div>
+      <div class="medio-hint">Pesta√±a Saldo SUBE</div>
     </div>
     <div class="medio-card auto">
       <div class="medio-label">Transferencias</div>
       <input type="text" class="medio-input" id="cierre-transf" value="$0" disabled>
-      <div class="medio-hint">Pestaña Transferencias</div>
+      <div class="medio-hint">Pesta√±a Transferencias</div>
     </div>
     <div class="medio-card auto">
       <div class="medio-label">Total retiros</div>
@@ -970,12 +970,12 @@ body {
       <div class="medio-hint">Retiro tipo Cierre</div>
     </div>
     <div class="medio-card">
-      <div class="medio-label">Tarjeta crédito</div>
+      <div class="medio-label">Tarjeta cr√©dito</div>
       <input type="number" class="medio-input" id="cierre-credito" placeholder="$0" step="1" inputmode="numeric" oninput="guardarCierreLocal()">
       <div class="medio-hint">Ingresar manualmente</div>
     </div>
     <div class="medio-card">
-      <div class="medio-label">Tarjeta débito</div>
+      <div class="medio-label">Tarjeta d√©bito</div>
       <input type="number" class="medio-input" id="cierre-debito" placeholder="$0" step="1" inputmode="numeric" oninput="guardarCierreLocal()">
       <div class="medio-hint">Ingresar manualmente</div>
     </div>
@@ -991,7 +991,7 @@ body {
 
 </main>
 
-<!-- ==================== MODAL CONFIRMACIÓN FINAL DE CIERRE ==================== -->
+<!-- ==================== MODAL CONFIRMACI√ìN FINAL DE CIERRE ==================== -->
 <div class="modal-overlay" id="modal-confirm-cierre">
   <div class="modal">
     <div class="modal-header">
@@ -999,7 +999,7 @@ body {
     </div>
     <div class="modal-body">
       <div id="modal-confirm-content">
-        <!-- Se llena dinámicamente -->
+        <!-- Se llena din√°micamente -->
       </div>
     </div>
     <div class="modal-footer">
@@ -1017,7 +1017,7 @@ body {
     </div>
     <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
       <div id="preview-cierre-content" class="ticket-preview">
-        <!-- Se llena dinámicamente -->
+        <!-- Se llena din√°micamente -->
       </div>
     </div>
     <div class="modal-footer">
@@ -1049,9 +1049,9 @@ body {
 <!-- ==================== NOTIFICATIONS ==================== -->
 <div class="notif-container" id="notifs"></div>
 
-<>
+<script>
 // ============================================================
-// CONFIGURACIÓN
+// CONFIGURACI√ìN
 // ============================================================
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNokzHZ3AIISX69-Y5-sYwVJiqgsTg1p2DtEBCQ9zWJK6lPD0O1PHcwR4pl6Auojp4Pg/exec';
 
@@ -1066,7 +1066,7 @@ const DENOMINACIONES = [100, 200, 500, 1000, 2000, 10000, 20000];
 // ============================================================
 let state = {
   cajero: 'Silvio',
-  turno: 'Mañana',
+  turno: 'Ma√±ana',
   sube: { inicial: 0, final: 0, aFacturar: 0, confirmado: false },
   transferencias: [],
   retiros: [],
@@ -1092,11 +1092,11 @@ function fmtNumeroPlano(n) {
 
 function ahoraTexto() {
   const now = new Date();
-  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const dias = ['Domingo','Lunes','Martes','Mi√©rcoles','Jueves','Viernes','S√°bado'];
   const dia = dias[now.getDay()];
   const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  return `${dia}, ${fecha} · ${hora} hs`;
+  return `${dia}, ${fecha} ¬∑ ${hora} hs`;
 }
 
 function inicial(cajero) {
@@ -1104,7 +1104,7 @@ function inicial(cajero) {
 }
 
 function siglaTurno() {
-  return state.turno === 'Mañana' ? 'TM' : 'TT';
+  return state.turno === 'Ma√±ana' ? 'TM' : 'TT';
 }
 
 function proximoNumeroRetiro() {
@@ -1185,7 +1185,7 @@ async function consultarAppsScript(params) {
 }
 
 // ============================================================
-// HEADER Y NAVEGACIÓN
+// HEADER Y NAVEGACI√ìN
 // ============================================================
 function actualizarDatetime() {
   document.getElementById('datetime').textContent = ahoraTexto();
@@ -1198,11 +1198,11 @@ function onCajeroChange() {
 
 function setTurno(t) {
   state.turno = t;
-  document.getElementById('btn-manana').classList.toggle('active', t === 'Mañana');
+  document.getElementById('btn-manana').classList.toggle('active', t === 'Ma√±ana');
   document.getElementById('btn-tarde').classList.toggle('active', t === 'Tarde');
   guardarLocal();
   actualizarPanelCierre();
-  // Verificar cierre del nuevo turno (puede desbloquear automáticamente si es otro día)
+  // Verificar cierre del nuevo turno (puede desbloquear autom√°ticamente si es otro d√≠a)
   verificarCierreExistente();
 }
 
@@ -1244,7 +1244,7 @@ function onSubeChange() {
 
 async function confirmarSaldoSube() {
   if (state.sube.aFacturar === 0) {
-    notif('Ingresá los saldos primero', 'error');
+    notif('Ingres√° los saldos primero', 'error');
     return;
   }
   const resp = await enviarAppsScript({
@@ -1278,16 +1278,16 @@ async function confirmarSaldoSube() {
 // TRANSFERENCIAS
 // ============================================================
 function agregarTransferencia() {
-  // Validar si el turno está bloqueado
+  // Validar si el turno est√° bloqueado
   if (document.getElementById('btn-confirmar-cierre').disabled) {
-    notif('❌ Turno cerrado. Cambiar a otro turno para continuar.', 'error');
+    notif('‚ùå Turno cerrado. Cambiar a otro turno para continuar.', 'error');
     return;
   }
   
   const input = document.getElementById('transf-input');
   const monto = parseFloat(input.value);
   if (!monto || monto <= 0) {
-    notif('Ingresá un monto válido', 'error');
+    notif('Ingres√° un monto v√°lido', 'error');
     return;
   }
   state.transferencias.push({ id: Date.now(), monto: monto });
@@ -1310,7 +1310,7 @@ function eliminarTransferencia(id) {
 function actualizarListaTransf() {
   const lista = document.getElementById('transf-list');
   if (state.transferencias.length === 0) {
-    lista.innerHTML = '<div class="list-empty">Sin transferencias aún</div>';
+    lista.innerHTML = '<div class="list-empty">Sin transferencias a√∫n</div>';
   } else {
     lista.innerHTML = state.transferencias.map((t, i) => `
       <div class="list-row">
@@ -1332,7 +1332,7 @@ async function guardarYLimpiarTransferencias() {
     return;
   }
   const total = state.transferencias.reduce((s, t) => s + t.monto, 0);
-  if (!confirm(`¿Guardar ${state.transferencias.length} transferencias ($${fmtNumeroPlano(total)}) y limpiar la lista?`)) return;
+  if (!confirm(`¬øGuardar ${state.transferencias.length} transferencias ($${fmtNumeroPlano(total)}) y limpiar la lista?`)) return;
 
   const resp = await enviarAppsScript({
     tipo: 'transferencias_lote',
@@ -1416,15 +1416,15 @@ function calcularDenominaciones() {
 }
 
 function abrirModalRetiro() {
-  // Validar si el turno está bloqueado
+  // Validar si el turno est√° bloqueado
   if (document.getElementById('btn-confirmar-cierre').disabled) {
-    notif('❌ Turno cerrado. Cambiar a otro turno para continuar.', 'error');
+    notif('‚ùå Turno cerrado. Cambiar a otro turno para continuar.', 'error');
     return;
   }
   
   const { monto } = calcularDenominaciones();
   if (monto === 0) {
-    notif('Ingresá al menos un billete', 'error');
+    notif('Ingres√° al menos un billete', 'error');
     return;
   }
   const tipo = document.getElementById('retiro-tipo').value;
@@ -1432,14 +1432,14 @@ function abrirModalRetiro() {
   const autoriza = document.getElementById('retiro-autoriza').value.trim();
 
   if (tipo === 'Otro retiro') {
-    if (!concepto) { notif('Completá el concepto', 'error'); return; }
-    if (!autoriza) { notif('Completá quién autoriza', 'error'); return; }
+    if (!concepto) { notif('Complet√° el concepto', 'error'); return; }
+    if (!autoriza) { notif('Complet√° qui√©n autoriza', 'error'); return; }
   }
 
   if (tipo === 'Cierre') {
     const existeCierre = state.retiros.some(r => r.tipoRetiro === 'Cierre' && r.turno === state.turno);
     if (existeCierre) {
-      if (!confirm('Ya existe un retiro tipo Cierre para este turno. ¿Registrar otro?')) return;
+      if (!confirm('Ya existe un retiro tipo Cierre para este turno. ¬øRegistrar otro?')) return;
     }
   }
 
@@ -1681,7 +1681,7 @@ function actualizarPanelCierre() {
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
   const efectivo = retiroCierre ? retiroCierre.monto : 0;
 
-  // Mostrar Saldo SUBE solo si está confirmado
+  // Mostrar Saldo SUBE solo si est√° confirmado
   const subeValor = state.sube.confirmado ? state.sube.aFacturar : 0;
   document.getElementById('cierre-sube').value = fmtMoneda(subeValor);
   
@@ -1712,22 +1712,20 @@ async function verificarCierreExistente() {
   const btnConfirmar = document.getElementById('btn-confirmar-cierre');
   
   if (resp.status === 'success' && resp.data && resp.data.existe) {
-    // Tenemos un cierre previo, comparar fechas
-    const cierreFecha = resp.data.fecha;  // "15/07/2026"
-    const hoyFecha = new Date().toLocaleDateString('es-AR', { 
-      day: '2-digit', month: '2-digit', year: 'numeric' 
-    });  // "16/07/2026"
-    
-    if (cierreFecha === hoyFecha) {
-      // MISMO DÍA → BLOQUEAR
+    // El backend ya calcul√≥ si el cierre es de hoy (evita comparar fechas
+    // en el cliente, poco confiable si Sheets autoconvierte la columna Fecha)
+    const esHoy = resp.data.esHoy;
+
+    if (esHoy) {
+      // MISMO D√çA ‚Üí BLOQUEAR
       bloquearTurno(resp.data);
     } else {
-      // OTRO DÍA → DESBLOQUEAR automáticamente
+      // OTRO D√çA ‚Üí DESBLOQUEAR autom√°ticamente
       desbloquearTurno();
       resetearEstadoDelTurno();
     }
   } else {
-    // Sin cierre previo → DESBLOQUEADO
+    // Sin cierre previo ‚Üí DESBLOQUEADO
     desbloquearTurno();
   }
 }
@@ -1792,7 +1790,7 @@ function habilitarBotonesCarga() {
 }
 
 function resetearEstadoDelTurno() {
-  // Limpiar datos del turno cuando se detecta que es un día diferente
+  // Limpiar datos del turno cuando se detecta que es un d√≠a diferente
   state.sube = { inicial: 0, final: 0, aFacturar: 0, confirmado: false };
   state.transferencias = [];
   state.retiros = [];
@@ -1842,7 +1840,7 @@ function abrirModalConfirmacionFinal(esDesbloqueo) {
   const html = `
     <div style="margin-bottom: 1.5rem;">
       ${esDesbloqueo ? `<div class="alert alert-warning" style="margin-bottom: 1rem;">
-        ⚠️ Vas a crear un <strong>SEGUNDO cierre</strong> para el ${state.turno} de hoy. Asegúrate de que sea necesario.
+        ‚ö†Ô∏è Vas a crear un <strong>SEGUNDO cierre</strong> para el ${state.turno} de hoy. Aseg√∫rate de que sea necesario.
       </div>` : ''}
       
       <div class="section-title">Resumen de medios</div>
@@ -1864,11 +1862,11 @@ function abrirModalConfirmacionFinal(esDesbloqueo) {
           <div style="font-weight: 600; font-size: 16px;">${fmtMoneda(efectivo)}</div>
         </div>
         <div>
-          <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta crédito</div>
+          <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta cr√©dito</div>
           <div style="font-weight: 600; font-size: 16px;">${fmtMoneda(state.cierre.credito)}</div>
         </div>
         <div>
-          <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta débito</div>
+          <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta d√©bito</div>
           <div style="font-weight: 600; font-size: 16px;">${fmtMoneda(state.cierre.debito)}</div>
         </div>
       </div>
@@ -1879,7 +1877,7 @@ function abrirModalConfirmacionFinal(esDesbloqueo) {
       </div>` : ''}
 
       <div style="padding: 10px 12px; background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 12px; color: var(--accent-text);">
-        <strong>✓ Estos datos se guardarán en Sheets.</strong> Después podrás imprimir el ticket.
+        <strong>‚úì Estos datos se guardar√°n en Sheets.</strong> Despu√©s podr√°s imprimir el ticket.
       </div>
     </div>
   `;
@@ -1921,7 +1919,7 @@ async function confirmarCierreFinal() {
     return;
   }
 
-  // Preparar datos para preview e impresión
+  // Preparar datos para preview e impresi√≥n
   state.cierre.datosGuardados = datos;
   state.cierre.retirosGuardados = delTurno;
 
@@ -1929,9 +1927,9 @@ async function confirmarCierreFinal() {
   abrirModalPreviewCierre(datos, delTurno);
 
   if (state.cierre.esDesbloqueo) {
-    notif('⚠️ Cierre duplicado registrado', 'warning');
+    notif('‚ö†Ô∏è Cierre duplicado registrado', 'warning');
   } else {
-    notif('✓ Cierre guardado', 'success');
+    notif('‚úì Cierre guardado', 'success');
   }
 }
 
@@ -1962,8 +1960,8 @@ function abrirModalPreviewCierre(datos, retiros) {
     <div class="ticket-section">Medios de pago</div>
     <div class="ticket-line"><span class="k">Efectivo</span><span class="v">${fmtMoneda(datos.efectivo)}</span></div>
     <div class="ticket-line"><span class="k">Transferencias</span><span class="v">${fmtMoneda(datos.transferencias)}</span></div>
-    <div class="ticket-line"><span class="k">Tarjeta crédito</span><span class="v">${fmtMoneda(datos.tarjetaCredito)}</span></div>
-    <div class="ticket-line"><span class="k">Tarjeta débito</span><span class="v">${fmtMoneda(datos.tarjetaDebito)}</span></div>
+    <div class="ticket-line"><span class="k">Tarjeta cr√©dito</span><span class="v">${fmtMoneda(datos.tarjetaCredito)}</span></div>
+    <div class="ticket-line"><span class="k">Tarjeta d√©bito</span><span class="v">${fmtMoneda(datos.tarjetaDebito)}</span></div>
     <div class="ticket-line"><span class="k">SUBE</span><span class="v">${fmtMoneda(datos.saldoSube)}</span></div>
   `;
 
@@ -1978,7 +1976,7 @@ function abrirModalPreviewCierre(datos, retiros) {
   `;
 
   if (datos.cierreDuplicado) {
-    html += `<div style="margin-top: 10px; padding: 8px; background: var(--warning-bg); border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 10px; color: var(--warning-text); text-align: center;">⚠️ CIERRE DUPLICADO - Se registró un cierre anterior hoy.</div>`;
+    html += `<div style="margin-top: 10px; padding: 8px; background: var(--warning-bg); border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 10px; color: var(--warning-text); text-align: center;">‚ö†Ô∏è CIERRE DUPLICADO - Se registr√≥ un cierre anterior hoy.</div>`;
   }
 
   document.getElementById('preview-cierre-content').innerHTML = html;
@@ -2016,7 +2014,7 @@ function limpiarDespuesDelCierre() {
   actualizarPanelCierre();
   verificarCierreExistente();
 
-  notif('✓ Datos del turno limpios. Listo para el próximo.', 'success');
+  notif('‚úì Datos del turno limpios. Listo para el pr√≥ximo.', 'success');
 }
 
 function validarValoresAutomaticos() {
@@ -2026,22 +2024,22 @@ function validarValoresAutomaticos() {
   const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
 
   if (state.sube.aFacturar === 0) {
-    alertas.push('⚠️ Saldo SUBE es $0. Verificá que confirmaste el cierre en la pestaña Saldo SUBE.');
+    alertas.push('‚ö†Ô∏è Saldo SUBE es $0. Verific√° que confirmaste el cierre en la pesta√±a Saldo SUBE.');
   }
   if (totalTransf === 0) {
-    alertas.push('⚠️ Transferencias son $0. ¿No hubo transferencias hoy? Confirmá.');
+    alertas.push('‚ö†Ô∏è Transferencias son $0. ¬øNo hubo transferencias hoy? Confirm√°.');
   }
   if (totalRetiros === 0) {
-    alertas.push('⚠️ Total retiros es $0. Registraste al menos un retiro.');
+    alertas.push('‚ö†Ô∏è Total retiros es $0. Registraste al menos un retiro.');
   }
 
   return alertas;
 }
 
 function mostrarAlertasValidacion(alertas) {
-  let msg = 'Validación: valores en cero detectados.\n\n';
-  alertas.forEach(a => msg += '• ' + a.replace(/⚠️ /, '').replace(/\n/g, '') + '\n');
-  msg += '\n¿Continuar de todas formas?';
+  let msg = 'Validaci√≥n: valores en cero detectados.\n\n';
+  alertas.forEach(a => msg += '‚Ä¢ ' + a.replace(/‚ö†Ô∏è /, '').replace(/\n/g, '') + '\n');
+  msg += '\n¬øContinuar de todas formas?';
   
   if (confirm(msg)) {
     // Permitir continuar
@@ -2055,7 +2053,7 @@ function mostrarAlertasValidacion(alertas) {
     const html = `
       <div style="margin-bottom: 1.5rem;">
         <div class="alert alert-warning" style="margin-bottom: 1rem;">
-          ⚠️ Valores en cero detectados. Confirmá que es correcto.
+          ‚ö†Ô∏è Valores en cero detectados. Confirm√° que es correcto.
         </div>
         
         <div class="section-title">Resumen de medios</div>
@@ -2077,17 +2075,17 @@ function mostrarAlertasValidacion(alertas) {
             <div style="font-weight: 600; font-size: 16px;">${fmtMoneda(efectivo)}</div>
           </div>
           <div>
-            <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta crédito</div>
+            <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta cr√©dito</div>
             <div style="font-weight: 600; font-size: 16px;">${fmtMoneda(state.cierre.credito)}</div>
           </div>
           <div>
-            <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta débito</div>
+            <div style="color: var(--text-secondary); font-size: 11px; margin-bottom: 4px;">Tarjeta d√©bito</div>
             <div style="font-weight: 600; font-size: 16px;">${fmtMoneda(state.cierre.debito)}</div>
           </div>
         </div>
 
         <div style="padding: 10px 12px; background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 12px; color: var(--accent-text);">
-          <strong>✓ Estos datos se guardarán en Sheets.</strong> Después podrás imprimir el ticket.
+          <strong>‚úì Estos datos se guardar√°n en Sheets.</strong> Despu√©s podr√°s imprimir el ticket.
         </div>
       </div>
     `;
@@ -2097,7 +2095,7 @@ function mostrarAlertasValidacion(alertas) {
   }
 }
 
-// Función generarPDFCierre removida - ahora se usa window.print() con CSS de impresión
+// Funci√≥n generarPDFCierre removida - ahora se usa window.print() con CSS de impresi√≥n
 
 // ============================================================
 // INIT
@@ -2106,7 +2104,7 @@ function init() {
   cargarLocal();
 
   document.getElementById('cajero').value = state.cajero;
-  document.getElementById('btn-manana').classList.toggle('active', state.turno === 'Mañana');
+  document.getElementById('btn-manana').classList.toggle('active', state.turno === 'Ma√±ana');
   document.getElementById('btn-tarde').classList.toggle('active', state.turno === 'Tarde');
 
   document.getElementById('sube-inicial').value = state.sube.inicial || '';
