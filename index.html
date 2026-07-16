@@ -1053,7 +1053,7 @@ body {
 // ============================================================
 // CONFIGURACIÓN
 // ============================================================
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrk5dgIes5hbmhjjASBQvCx9dfkbD1UiGdlF1cZtHBj5pb-2Q1CraqtLplex6mBtgchA/exec';
+const APPS_SCRIPT_URL = 'REEMPLAZAR_CON_URL_DE_APPS_SCRIPT';
 
 const CAJEROS_INICIALES = {
   'Silvio': 'S', 'Tony': 'T', 'Aldana': 'A', 'Flor': 'F', 'Daniel': 'D'
@@ -1067,10 +1067,10 @@ const DENOMINACIONES = [100, 200, 500, 1000, 2000, 10000, 20000];
 let state = {
   cajero: 'Silvio',
   turno: 'Mañana',
-  sube: { inicial: 0, final: 0, aFacturar: 0 },
+  sube: { inicial: 0, final: 0, aFacturar: 0, confirmado: false },
   transferencias: [],
   retiros: [],
-  cierre: { credito: 0, debito: 0, notas: '', confirmado: false }
+  cierre: { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false }
 };
 
 // ============================================================
@@ -1202,6 +1202,7 @@ function setTurno(t) {
   document.getElementById('btn-tarde').classList.toggle('active', t === 'Tarde');
   guardarLocal();
   actualizarPanelCierre();
+  // Verificar cierre del nuevo turno (puede desbloquear automáticamente si es otro día)
   verificarCierreExistente();
 }
 
@@ -1255,12 +1256,19 @@ async function confirmarSaldoSube() {
     aFacturar: state.sube.aFacturar
   });
   if (resp.status === 'success') {
-    notif('Saldo SUBE registrado', 'success');
+    notif('Saldo SUBE confirmado y guardado', 'success');
     document.getElementById('sube-alert-cierre').style.display = 'flex';
+    
+    // Setear flag de confirmado = true
+    state.sube.confirmado = true;
+    
+    // Limpiar inputs pero mantener el valor en state para panel cierre
     document.getElementById('sube-inicial').value = '';
     document.getElementById('sube-final').value = '';
-    state.sube = { inicial: 0, final: 0, aFacturar: 0 };
-    onSubeChange();
+    
+    // Actualizar panel cierre para que muestre el saldo confirmado
+    actualizarPanelCierre();
+    guardarLocal();
   } else {
     notif('Error: ' + resp.message, 'error');
   }
@@ -1270,6 +1278,12 @@ async function confirmarSaldoSube() {
 // TRANSFERENCIAS
 // ============================================================
 function agregarTransferencia() {
+  // Validar si el turno está bloqueado
+  if (document.getElementById('btn-confirmar-cierre').disabled) {
+    notif('❌ Turno cerrado. Cambiar a otro turno para continuar.', 'error');
+    return;
+  }
+  
   const input = document.getElementById('transf-input');
   const monto = parseFloat(input.value);
   if (!monto || monto <= 0) {
@@ -1402,6 +1416,12 @@ function calcularDenominaciones() {
 }
 
 function abrirModalRetiro() {
+  // Validar si el turno está bloqueado
+  if (document.getElementById('btn-confirmar-cierre').disabled) {
+    notif('❌ Turno cerrado. Cambiar a otro turno para continuar.', 'error');
+    return;
+  }
+  
   const { monto } = calcularDenominaciones();
   if (monto === 0) {
     notif('Ingresá al menos un billete', 'error');
@@ -1661,7 +1681,10 @@ function actualizarPanelCierre() {
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
   const efectivo = retiroCierre ? retiroCierre.monto : 0;
 
-  document.getElementById('cierre-sube').value = fmtMoneda(state.sube.aFacturar);
+  // Mostrar Saldo SUBE solo si está confirmado
+  const subeValor = state.sube.confirmado ? state.sube.aFacturar : 0;
+  document.getElementById('cierre-sube').value = fmtMoneda(subeValor);
+  
   document.getElementById('cierre-transf').value = fmtMoneda(totalTransf);
   document.getElementById('cierre-total-retiros').value = fmtMoneda(totalRetiros);
   document.getElementById('cierre-efectivo').value = fmtMoneda(efectivo);
@@ -1670,7 +1693,7 @@ function actualizarPanelCierre() {
   document.getElementById('cierre-notas').value = state.cierre.notas || '';
 
   // Guardar valores actuales para usar en modal de confirmar
-  state.cierre.subeActual = state.sube.aFacturar;
+  state.cierre.subeActual = subeValor;
   state.cierre.transfActual = totalTransf;
   state.cierre.totalRetirosActual = totalRetiros;
   state.cierre.efectivoActual = efectivo;
@@ -1687,32 +1710,101 @@ async function verificarCierreExistente() {
   const resp = await consultarAppsScript({ tipo: 'cierre_existe', turno: state.turno });
   const alertaDuplicado = document.getElementById('cierre-duplicado-alert');
   const btnConfirmar = document.getElementById('btn-confirmar-cierre');
-  const warn = document.getElementById('cierre-warn');
   
   if (resp.status === 'success' && resp.data && resp.data.existe) {
-    // Mostrar alerta bloqueante
-    alertaDuplicado.style.display = 'block';
-    document.getElementById('cierre-dup-turno').textContent = `Turno ${state.turno}`;
-    document.getElementById('cierre-dup-hora').textContent = resp.data.hora + ' hs';
-    document.getElementById('cierre-dup-cajero').textContent = resp.data.cajero;
-    document.getElementById('cierre-dup-total').textContent = fmtMoneda(resp.data.total || 0);
+    // Tenemos un cierre previo, comparar fechas
+    const cierreFecha = resp.data.fecha;  // "15/07/2026"
+    const hoyFecha = new Date().toLocaleDateString('es-AR', { 
+      day: '2-digit', month: '2-digit', year: 'numeric' 
+    });  // "16/07/2026"
     
-    // Deshabilitar botón de confirmar
-    btnConfirmar.disabled = true;
-    btnConfirmar.style.opacity = '0.5';
-    btnConfirmar.style.cursor = 'not-allowed';
-    
-    warn.style.display = 'none';
-    limpiarCheckboxDesbloqueo();
+    if (cierreFecha === hoyFecha) {
+      // MISMO DÍA → BLOQUEAR
+      bloquearTurno(resp.data);
+    } else {
+      // OTRO DÍA → DESBLOQUEAR automáticamente
+      desbloquearTurno();
+      resetearEstadoDelTurno();
+    }
   } else {
-    // No hay cierre, todo desbloqueado
-    alertaDuplicado.style.display = 'none';
-    btnConfirmar.disabled = false;
-    btnConfirmar.style.opacity = '1';
-    btnConfirmar.style.cursor = 'pointer';
-    warn.style.display = 'none';
-    limpiarCheckboxDesbloqueo();
+    // Sin cierre previo → DESBLOQUEADO
+    desbloquearTurno();
   }
+}
+
+function bloquearTurno(datoCierre) {
+  const alertaDuplicado = document.getElementById('cierre-duplicado-alert');
+  const btnConfirmar = document.getElementById('btn-confirmar-cierre');
+  
+  alertaDuplicado.style.display = 'block';
+  document.getElementById('cierre-dup-turno').textContent = `Turno ${state.turno}`;
+  document.getElementById('cierre-dup-hora').textContent = datoCierre.hora + ' hs';
+  document.getElementById('cierre-dup-cajero').textContent = datoCierre.cajero;
+  document.getElementById('cierre-dup-total').textContent = fmtMoneda(datoCierre.total || 0);
+  
+  btnConfirmar.disabled = true;
+  btnConfirmar.style.opacity = '0.5';
+  btnConfirmar.style.cursor = 'not-allowed';
+  
+  deshabilitarBotonesCarga();
+  limpiarCheckboxDesbloqueo();
+}
+
+function desbloquearTurno() {
+  const alertaDuplicado = document.getElementById('cierre-duplicado-alert');
+  const btnConfirmar = document.getElementById('btn-confirmar-cierre');
+  
+  alertaDuplicado.style.display = 'none';
+  btnConfirmar.disabled = false;
+  btnConfirmar.style.opacity = '1';
+  btnConfirmar.style.cursor = 'pointer';
+  
+  habilitarBotonesCarga();
+  limpiarCheckboxDesbloqueo();
+}
+
+function deshabilitarBotonesCarga() {
+  document.getElementById('sube-inicial').disabled = true;
+  document.getElementById('sube-final').disabled = true;
+  const btnConfirmarSube = document.querySelector('button[onclick="confirmarSaldoSube()"]');
+  if (btnConfirmarSube) { btnConfirmarSube.disabled = true; btnConfirmarSube.style.opacity = '0.5'; }
+  
+  const btnAgregarTransf = document.querySelector('button[onclick="agregarTransferencia()"]');
+  if (btnAgregarTransf) { btnAgregarTransf.disabled = true; btnAgregarTransf.style.opacity = '0.5'; }
+  document.getElementById('transf-input').disabled = true;
+  
+  const btnConfirmarRetiro = document.querySelector('button[onclick="abrirModalRetiro()"]');
+  if (btnConfirmarRetiro) { btnConfirmarRetiro.disabled = true; btnConfirmarRetiro.style.opacity = '0.5'; }
+}
+
+function habilitarBotonesCarga() {
+  document.getElementById('sube-inicial').disabled = false;
+  document.getElementById('sube-final').disabled = false;
+  const btnConfirmarSube = document.querySelector('button[onclick="confirmarSaldoSube()"]');
+  if (btnConfirmarSube) { btnConfirmarSube.disabled = false; btnConfirmarSube.style.opacity = '1'; }
+  
+  const btnAgregarTransf = document.querySelector('button[onclick="agregarTransferencia()"]');
+  if (btnAgregarTransf) { btnAgregarTransf.disabled = false; btnAgregarTransf.style.opacity = '1'; }
+  document.getElementById('transf-input').disabled = false;
+  
+  const btnConfirmarRetiro = document.querySelector('button[onclick="abrirModalRetiro()"]');
+  if (btnConfirmarRetiro) { btnConfirmarRetiro.disabled = false; btnConfirmarRetiro.style.opacity = '1'; }
+}
+
+function resetearEstadoDelTurno() {
+  // Limpiar datos del turno cuando se detecta que es un día diferente
+  state.sube = { inicial: 0, final: 0, aFacturar: 0, confirmado: false };
+  state.transferencias = [];
+  state.retiros = [];
+  state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false };
+  guardarLocal();
+  
+  document.getElementById('sube-inicial').value = '';
+  document.getElementById('sube-final').value = '';
+  actualizarListaTransf();
+  actualizarListaRetiros();
+  actualizarBadges();
+  actualizarPanelCierre();
 }
 
 function toggleBtnDesbloqueo() {
@@ -1909,7 +2001,7 @@ function limpiarDespuesDelCierre() {
   cerrarModalPreviewCierre();
 
   // Limpiar datos del turno actual
-  state.sube = { inicial: 0, final: 0, aFacturar: 0 };
+  state.sube = { inicial: 0, final: 0, aFacturar: 0, confirmado: false };
   state.transferencias = [];
   state.retiros = state.retiros.filter(r => r.turno !== state.turno);
   state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false };
