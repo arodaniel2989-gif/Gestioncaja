@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg: #fafaf9;
@@ -727,13 +726,18 @@ body {
 @media print {
   body { margin: 0; padding: 0; background: white; }
   .app { max-width: 100%; margin: 0; border: none; }
-  .header, .tabs, .tab, main > * { display: none !important; }
-  .modal-overlay.active { display: none !important; }
-  #modal-preview-cierre.active .modal { display: block !important; box-shadow: none; max-width: 100%; }
-  #modal-preview-cierre.active .modal-header { display: none; }
-  #modal-preview-cierre.active .modal-body { padding: 0; max-height: 100%; overflow: visible; }
-  #modal-preview-cierre.active .modal-footer { display: none; }
-  #preview-cierre-content { border: none; padding: 0; }
+  .header, .tabs, .tab, main > *, .notif-container { display: none !important; }
+  /* Ocultar todos los overlays por defecto, y s√≥lo mostrar el que est√© activo */
+  .modal-overlay { display: none !important; }
+  .modal-overlay.active {
+    display: block !important;
+    position: static !important;
+    background: none !important;
+  }
+  .modal-overlay.active .modal { display: block !important; box-shadow: none; max-width: 100%; }
+  .modal-overlay.active .modal-header,
+  .modal-overlay.active .modal-footer { display: none !important; }
+  .modal-overlay.active .modal-body { padding: 0; max-height: 100%; overflow: visible; }
   .ticket-preview { font-size: 10px; width: 80mm; margin: 0 auto; }
 }
 </style>
@@ -839,6 +843,9 @@ body {
   </div>
 
   <button class="btn btn-primary" onclick="guardarYLimpiarTransferencias()">Guardar y limpiar</button>
+  <div id="transf-confirmado-alert" class="alert alert-success" style="display:none; margin-top: 0.75rem;">
+    <span>‚úì Transferencias confirmadas. Ya se reflejan en el Cierre.</span>
+  </div>
 </div>
 
 <!-- ==================== PANEL RETIROS ==================== -->
@@ -865,11 +872,6 @@ body {
     </div>
   </div>
 
-  <div class="field">
-    <label>Notas (opcional)</label>
-    <textarea id="retiro-notas" placeholder="Observaciones..."></textarea>
-  </div>
-
   <div class="section-title">Denominaciones</div>
 
   <div class="denom-table" id="denom-table">
@@ -890,6 +892,18 @@ body {
   <div class="section-title" style="margin-top: 2rem;">Retiros del turno</div>
   <div class="list" id="retiros-list">
     <div class="list-empty">Sin retiros registrados</div>
+  </div>
+
+  <div class="metric-grid" style="margin-top: 1rem;">
+    <div class="metric accent big">
+      <div class="metric-label">Total del turno</div>
+      <div class="metric-value" id="retiros-total-turno">$0</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="confirmarTotalRetiros()">Confirmar total de retiros</button>
+  <div id="retiros-confirmado-alert" class="alert alert-success" style="display:none; margin-top: 0.75rem;">
+    <span>‚úì Total de retiros confirmado. Ya se refleja en el Cierre.</span>
   </div>
 </div>
 
@@ -1069,7 +1083,9 @@ let state = {
   turno: 'Ma√±ana',
   sube: { inicial: 0, final: 0, aFacturar: 0, confirmado: false },
   transferencias: [],
+  transferenciasConfirmadas: { total: 0, confirmado: false },
   retiros: [],
+  retirosConfirmados: { total: 0, confirmado: false },
   cierre: { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false }
 };
 
@@ -1258,9 +1274,12 @@ async function confirmarSaldoSube() {
   if (resp.status === 'success') {
     notif('Saldo SUBE confirmado y guardado', 'success');
     document.getElementById('sube-alert-cierre').style.display = 'flex';
-    
+
     // Setear flag de confirmado = true
     state.sube.confirmado = true;
+
+    // Recordatorio: facturar el saldo en el sistema de Carga Plus
+    alert('‚ö†Ô∏è Factur√° el saldo en el sistema antes de avanzar!');
     
     // Limpiar inputs pero mantener el valor en state para panel cierre
     document.getElementById('sube-inicial').value = '';
@@ -1324,15 +1343,17 @@ function actualizarListaTransf() {
   const total = state.transferencias.reduce((s, t) => s + t.monto, 0);
   document.getElementById('transf-count').textContent = state.transferencias.length;
   document.getElementById('transf-total').textContent = fmtMoneda(total);
+  document.getElementById('transf-confirmado-alert').style.display =
+    state.transferenciasConfirmadas.confirmado ? 'flex' : 'none';
 }
 
 async function guardarYLimpiarTransferencias() {
+  // Misma validaci√≥n que Saldo SUBE y Retiros: sin datos, no se puede confirmar
   if (state.transferencias.length === 0) {
     notif('No hay transferencias para guardar', 'error');
     return;
   }
   const total = state.transferencias.reduce((s, t) => s + t.monto, 0);
-  if (!confirm(`¬øGuardar ${state.transferencias.length} transferencias ($${fmtNumeroPlano(total)}) y limpiar la lista?`)) return;
 
   const resp = await enviarAppsScript({
     tipo: 'transferencias_lote',
@@ -1343,6 +1364,10 @@ async function guardarYLimpiarTransferencias() {
   });
   if (resp.status === 'success') {
     notif('Transferencias guardadas', 'success');
+    // El total confirmado se acumula: puede haber varias tandas de
+    // "Guardar y limpiar" en el mismo turno y todas deben sumar al Cierre
+    state.transferenciasConfirmadas.confirmado = true;
+    state.transferenciasConfirmadas.total += total;
     state.transferencias = [];
     guardarLocal();
     actualizarListaTransf();
@@ -1466,7 +1491,6 @@ function renderTicketPreview() {
   const tipo = document.getElementById('retiro-tipo').value;
   const concepto = document.getElementById('retiro-concepto').value.trim();
   const autoriza = document.getElementById('retiro-autoriza').value.trim();
-  const notas = document.getElementById('retiro-notas').value.trim();
   const { monto } = calcularDenominaciones();
   const numero = numeroRetiro();
   const now = new Date();
@@ -1490,9 +1514,6 @@ function renderTicketPreview() {
   if (tipo === 'Otro retiro' && autoriza) {
     html += `<div class="ticket-line"><span class="k">Autoriza</span><span class="v">${autoriza}</span></div>`;
   }
-  if (notas) {
-    html += `<div class="ticket-divider"></div><div class="ticket-notes">Notas: ${notas}</div>`;
-  }
   html += `
     <div class="ticket-divider"></div>
     <div class="ticket-amount-label">Monto</div>
@@ -1513,7 +1534,6 @@ async function confirmarRetiro() {
   const tipo = document.getElementById('retiro-tipo').value;
   const concepto = document.getElementById('retiro-concepto').value.trim();
   const autoriza = document.getElementById('retiro-autoriza').value.trim();
-  const notas = document.getElementById('retiro-notas').value.trim();
   const { denominaciones, monto } = calcularDenominaciones();
   const numero = numeroRetiro();
   const now = new Date();
@@ -1523,7 +1543,6 @@ async function confirmarRetiro() {
     tipoRetiro: tipo,
     concepto: tipo === 'Otro retiro' ? concepto : tipo,
     autoriza: autoriza,
-    notas: notas,
     monto: monto,
     denominaciones: denominaciones,
     cajero: state.cajero,
@@ -1540,27 +1559,53 @@ async function confirmarRetiro() {
   }
 
   state.retiros.push(retiro);
+  // Un nuevo retiro invalida la confirmaci√≥n previa del total: hay que reconfirmar
+  state.retirosConfirmados.confirmado = false;
   guardarLocal();
-
-  if (tipo !== 'Cierre') {
-    generarPDFRetiro(retiro);
-    navigator.clipboard.writeText(fmtNumeroPlano(monto)).catch(() => {});
-    notif(`Retiro ${numero} guardado y copiado`, 'success');
-  } else {
-    notif(`Retiro de Cierre registrado: ${fmtMoneda(monto)}`, 'success');
-  }
-
-  document.getElementById('retiro-tipo').value = 'Caja recaudadora';
-  document.getElementById('retiro-concepto').value = '';
-  document.getElementById('retiro-autoriza').value = '';
-  document.getElementById('retiro-notas').value = '';
-  document.querySelectorAll('.denom-input').forEach(i => i.value = '');
-  onTipoRetiroChange();
-  actualizarSubtotales();
-  cerrarModalRetiro();
   actualizarListaRetiros();
   actualizarBadges();
   actualizarPanelCierre();
+
+  if (tipo !== 'Cierre') {
+    navigator.clipboard.writeText(fmtNumeroPlano(monto)).catch(() => {});
+    notif(`Retiro ${numero} guardado y copiado`, 'success');
+    imprimirRetiro();
+  } else {
+    notif(`Retiro de Cierre registrado: ${fmtMoneda(monto)}`, 'success');
+    cerrarModalRetiro();
+    resetFormRetiro();
+  }
+}
+
+function imprimirRetiro() {
+  window.print();
+  setTimeout(() => {
+    cerrarModalRetiro();
+    resetFormRetiro();
+  }, 100);
+}
+
+function resetFormRetiro() {
+  document.getElementById('retiro-tipo').value = 'Caja recaudadora';
+  document.getElementById('retiro-concepto').value = '';
+  document.getElementById('retiro-autoriza').value = '';
+  document.querySelectorAll('.denom-input').forEach(i => i.value = '');
+  onTipoRetiroChange();
+  actualizarSubtotales();
+}
+
+function confirmarTotalRetiros() {
+  const delTurno = state.retiros.filter(r => r.turno === state.turno);
+  if (delTurno.length === 0) {
+    notif('No hay retiros registrados para confirmar', 'error');
+    return;
+  }
+  const total = delTurno.reduce((s, r) => s + r.monto, 0);
+  state.retirosConfirmados = { total: total, confirmado: true };
+  guardarLocal();
+  actualizarListaRetiros();
+  actualizarPanelCierre();
+  notif('Total de retiros confirmado: ' + fmtMoneda(total), 'success');
 }
 
 function actualizarListaRetiros() {
@@ -1568,123 +1613,37 @@ function actualizarListaRetiros() {
   const delTurno = state.retiros.filter(r => r.turno === state.turno);
   if (delTurno.length === 0) {
     lista.innerHTML = '<div class="list-empty">Sin retiros registrados</div>';
-    return;
+  } else {
+    lista.innerHTML = delTurno.map(r => `
+      <div class="list-row">
+        <div class="list-num">${r.numero}</div>
+        <div class="list-main"><div class="list-title">${r.concepto || r.tipoRetiro}</div></div>
+        <div class="list-amount">${fmtMoneda(r.monto)}</div>
+      </div>
+    `).join('');
   }
-  lista.innerHTML = delTurno.map(r => `
-    <div class="list-row">
-      <div class="list-num">${r.numero}</div>
-      <div class="list-main"><div class="list-title">${r.concepto || r.tipoRetiro}</div></div>
-      <div class="list-amount">${fmtMoneda(r.monto)}</div>
-    </div>
-  `).join('');
-}
-
-// ============================================================
-// PDF - Retiros
-// ============================================================
-function generarPDFRetiro(retiro) {
-  const { jsPDF } = window.jspdf;
-  const height = retiro.tipoRetiro === 'Caja recaudadora' ? 130 : (retiro.notas ? 150 : 135);
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, height] });
-
-  let y = 8;
-  const W = 80;
-  const CENTER = W / 2;
-  const LEFT = 5;
-  const RIGHT = W - 5;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('BIERPORT', CENTER, y, { align: 'center' });
-  y += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text('Retiro de caja', CENTER, y, { align: 'center' });
-  y += 4;
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(LEFT, y, RIGHT, y);
-  doc.setLineDashPattern([], 0);
-  y += 4;
-
-  doc.setFontSize(9);
-  const kv = (k, v) => {
-    doc.setFont('helvetica', 'normal');
-    doc.text(k, LEFT, y);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(v), RIGHT, y, { align: 'right' });
-    y += 4;
-  };
-
-  kv('Retiro', retiro.numero);
-  kv('Fecha', retiro.fecha);
-  kv('Hora', retiro.hora + ' hs');
-
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(LEFT, y, RIGHT, y);
-  doc.setLineDashPattern([], 0);
-  y += 4;
-
-  kv('Cajero', retiro.cajero);
-  kv('Turno', retiro.turno);
-  kv('Concepto', retiro.concepto);
-  if (retiro.tipoRetiro === 'Otro retiro' && retiro.autoriza) {
-    kv('Autoriza', retiro.autoriza);
-  }
-
-  if (retiro.notas) {
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y);
-    doc.setLineDashPattern([], 0);
-    y += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    const lineas = doc.splitTextToSize('Notas: ' + retiro.notas, W - 10);
-    lineas.forEach(l => { doc.text(l, LEFT, y); y += 3.5; });
-  }
-
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(LEFT, y, RIGHT, y);
-  doc.setLineDashPattern([], 0);
-  y += 5;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text('MONTO', CENTER, y, { align: 'center' });
-  y += 6;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(fmtMoneda(retiro.monto), CENTER, y, { align: 'center' });
-  y += 4;
-
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(LEFT, y, RIGHT, y);
-  doc.setLineDashPattern([], 0);
-  y += 12;
-
-  doc.line(LEFT + 10, y, RIGHT - 10, y);
-  y += 3.5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.text('Firma del responsable', CENTER, y, { align: 'center' });
-
-  doc.autoPrint();
-  window.open(doc.output('bloburl'), '_blank');
+  const total = delTurno.reduce((s, r) => s + r.monto, 0);
+  document.getElementById('retiros-total-turno').textContent = fmtMoneda(total);
+  document.getElementById('retiros-confirmado-alert').style.display =
+    state.retirosConfirmados.confirmado ? 'flex' : 'none';
 }
 
 // ============================================================
 // CIERRE
 // ============================================================
 function actualizarPanelCierre() {
-  const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  // Transferencias y Retiros s√≥lo cuentan para el Cierre una vez confirmados
+  // (bot√≥n "Guardar y limpiar" / "Confirmar total de retiros")
+  const totalTransf = state.transferenciasConfirmadas.confirmado ? state.transferenciasConfirmadas.total : 0;
   const delTurno = state.retiros.filter(r => r.turno === state.turno);
-  const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+  const totalRetiros = state.retirosConfirmados.confirmado ? state.retirosConfirmados.total : 0;
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
   const efectivo = retiroCierre ? retiroCierre.monto : 0;
 
   // Mostrar Saldo SUBE solo si est√° confirmado
   const subeValor = state.sube.confirmado ? state.sube.aFacturar : 0;
   document.getElementById('cierre-sube').value = fmtMoneda(subeValor);
-  
+
   document.getElementById('cierre-transf').value = fmtMoneda(totalTransf);
   document.getElementById('cierre-total-retiros').value = fmtMoneda(totalRetiros);
   document.getElementById('cierre-efectivo').value = fmtMoneda(efectivo);
@@ -1793,10 +1752,12 @@ function resetearEstadoDelTurno() {
   // Limpiar datos del turno cuando se detecta que es un d√≠a diferente
   state.sube = { inicial: 0, final: 0, aFacturar: 0, confirmado: false };
   state.transferencias = [];
+  state.transferenciasConfirmadas = { total: 0, confirmado: false };
   state.retiros = [];
+  state.retirosConfirmados = { total: 0, confirmado: false };
   state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false };
   guardarLocal();
-  
+
   document.getElementById('sube-inicial').value = '';
   document.getElementById('sube-final').value = '';
   actualizarListaTransf();
@@ -1829,9 +1790,9 @@ function abrirModalConfirmacionFinal(esDesbloqueo) {
     return;
   }
 
-  const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  const totalTransf = state.transferenciasConfirmadas.confirmado ? state.transferenciasConfirmadas.total : 0;
   const delTurno = state.retiros.filter(r => r.turno === state.turno);
-  const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+  const totalRetiros = state.retirosConfirmados.confirmado ? state.retirosConfirmados.total : 0;
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
   const efectivo = retiroCierre ? retiroCierre.monto : 0;
 
@@ -1893,10 +1854,10 @@ function cerrarModalConfirmacionFinal() {
 
 async function confirmarCierreFinal() {
   const delTurno = state.retiros.filter(r => r.turno === state.turno);
-  const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+  const totalRetiros = state.retirosConfirmados.confirmado ? state.retirosConfirmados.total : 0;
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
   const efectivo = retiroCierre ? retiroCierre.monto : 0;
-  const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  const totalTransf = state.transferenciasConfirmadas.confirmado ? state.transferenciasConfirmadas.total : 0;
 
   const datos = {
     tipo: 'cierre',
@@ -1991,17 +1952,17 @@ function cerrarModalPreviewCierre() {
 function imprimirCierre() {
   window.print();
   setTimeout(() => {
-    limpiarDespuesDelCierre();
+    cerrarModalPreviewCierre();
   }, 100);
 }
 
 function limpiarDespuesDelCierre() {
-  cerrarModalPreviewCierre();
-
   // Limpiar datos del turno actual
   state.sube = { inicial: 0, final: 0, aFacturar: 0, confirmado: false };
   state.transferencias = [];
+  state.transferenciasConfirmadas = { total: 0, confirmado: false };
   state.retiros = state.retiros.filter(r => r.turno !== state.turno);
+  state.retirosConfirmados = { total: 0, confirmado: false };
   state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false };
   guardarLocal();
 
@@ -2019,18 +1980,22 @@ function limpiarDespuesDelCierre() {
 
 function validarValoresAutomaticos() {
   const alertas = [];
-  const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+  const hayTransferenciasSinConfirmar = state.transferencias.length > 0 && !state.transferenciasConfirmadas.confirmado;
   const delTurno = state.retiros.filter(r => r.turno === state.turno);
-  const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+  const hayRetirosSinConfirmar = delTurno.length > 0 && !state.retirosConfirmados.confirmado;
 
   if (state.sube.aFacturar === 0) {
     alertas.push('‚ö†Ô∏è Saldo SUBE es $0. Verific√° que confirmaste el cierre en la pesta√±a Saldo SUBE.');
   }
-  if (totalTransf === 0) {
+  if (hayTransferenciasSinConfirmar) {
+    alertas.push('‚ö†Ô∏è Hay transferencias cargadas sin guardar. And√° a la pesta√±a Transferencias y hac√© "Guardar y limpiar".');
+  } else if (!state.transferenciasConfirmadas.confirmado) {
     alertas.push('‚ö†Ô∏è Transferencias son $0. ¬øNo hubo transferencias hoy? Confirm√°.');
   }
-  if (totalRetiros === 0) {
-    alertas.push('‚ö†Ô∏è Total retiros es $0. Registraste al menos un retiro.');
+  if (hayRetirosSinConfirmar) {
+    alertas.push('‚ö†Ô∏è Hay retiros sin confirmar. And√° a la pesta√±a Retiros y toc√° "Confirmar total de retiros".');
+  } else if (!state.retirosConfirmados.confirmado) {
+    alertas.push('‚ö†Ô∏è Total retiros es $0. Registr√° al menos un retiro y confirm√° el total.');
   }
 
   return alertas;
@@ -2044,9 +2009,9 @@ function mostrarAlertasValidacion(alertas) {
   if (confirm(msg)) {
     // Permitir continuar
     state.cierre.esDesbloqueo = false;
-    const totalTransf = state.transferencias.reduce((s, t) => s + t.monto, 0);
+    const totalTransf = state.transferenciasConfirmadas.confirmado ? state.transferenciasConfirmadas.total : 0;
     const delTurno = state.retiros.filter(r => r.turno === state.turno);
-    const totalRetiros = delTurno.reduce((s, r) => s + r.monto, 0);
+    const totalRetiros = state.retirosConfirmados.confirmado ? state.retirosConfirmados.total : 0;
     const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
     const efectivo = retiroCierre ? retiroCierre.monto : 0;
 
