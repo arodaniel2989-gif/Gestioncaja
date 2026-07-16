@@ -739,6 +739,11 @@ body {
   .denom-header, .denom-row { grid-template-columns: 80px 1fr 100px; padding: 6px 10px; }
 }
 
+/* Contenedor dedicado a impresión: vive fuera de cualquier modal para no
+   heredar paddings/max-height pensados para pantalla (esa mezcla fue la
+   causa de los recortes al imprimir). En pantalla queda oculto. */
+#print-area { display: none; }
+
 @media print {
   /* Ancho fijo de rollo térmico (80mm), alto automático según contenido */
   @page {
@@ -746,26 +751,21 @@ body {
     margin: 0;
   }
 
-  body { margin: 0; padding: 0; background: white; }
-  .app { max-width: 100%; margin: 0; border: none; }
-  .header, .tabs, .tab, main > *, .notif-container { display: none !important; }
-  /* Ocultar todos los overlays por defecto, y sólo mostrar el que esté activo */
-  .modal-overlay { display: none !important; }
-  .modal-overlay.active {
+  html, body { margin: 0 !important; padding: 0 !important; background: white; width: 80mm; }
+
+  /* Ocultar TODO lo demás y mostrar únicamente el área de impresión */
+  body > *:not(#print-area) { display: none !important; }
+
+  #print-area {
     display: block !important;
-    position: static !important;
-    background: none !important;
+    width: 80mm;
   }
-  .modal-overlay.active .modal { display: block !important; box-shadow: none; max-width: 100%; }
-  .modal-overlay.active .modal-header,
-  .modal-overlay.active .modal-footer { display: none !important; }
-  .modal-overlay.active .modal-body { padding: 0; max-height: 100%; overflow: visible; }
 
   /* Ticket: área de impresión de 77mm (con margen de seguridad dentro del
      rollo de 80mm), largo mínimo 210mm (crece si el contenido es más largo),
      letras más grandes y en negro puro para que salgan nítidas en la
      impresora térmica */
-  .ticket-preview {
+  #print-area-content.ticket-preview {
     width: 77mm;
     min-height: 210mm;
     margin: 0 auto;
@@ -776,22 +776,22 @@ body {
     line-height: 1.6;
     color: #000 !important;
   }
-  .ticket-brand { font-size: 17px; }
-  .ticket-sub,
-  .ticket-line,
-  .ticket-line .k,
-  .ticket-item-row,
-  .ticket-item-row .n,
-  .ticket-notes,
-  .ticket-section,
-  .ticket-sign-line,
-  .ticket-amount-label {
+  #print-area-content .ticket-brand { font-size: 17px; }
+  #print-area-content .ticket-sub,
+  #print-area-content .ticket-line,
+  #print-area-content .ticket-line .k,
+  #print-area-content .ticket-item-row,
+  #print-area-content .ticket-item-row .n,
+  #print-area-content .ticket-notes,
+  #print-area-content .ticket-section,
+  #print-area-content .ticket-sign-line,
+  #print-area-content .ticket-amount-label {
     font-size: 13px;
     color: #000 !important;
   }
-  .ticket-amount { font-size: 26px; }
-  .ticket-divider { border-top-color: #000; }
-  .ticket-sign-line { border-top-color: #000; }
+  #print-area-content .ticket-amount { font-size: 26px; }
+  #print-area-content .ticket-divider { border-top-color: #000; }
+  #print-area-content .ticket-sign-line { border-top-color: #000; }
 }
 </style>
 </head>
@@ -865,7 +865,7 @@ body {
     </div>
   </div>
 
-  <button class="btn btn-primary" onclick="confirmarSaldoSube()">Confirmar y guardar</button>
+  <button class="btn btn-primary" id="btn-confirmar-sube" onclick="confirmarSaldoSube()">Confirmar y guardar</button>
 </div>
 
 <!-- ==================== PANEL TRANSFERENCIAS ==================== -->
@@ -895,7 +895,7 @@ body {
     </div>
   </div>
 
-  <button class="btn btn-primary" onclick="guardarYLimpiarTransferencias()">Guardar y limpiar</button>
+  <button class="btn btn-primary" id="btn-guardar-transf" onclick="guardarYLimpiarTransferencias()">Guardar y limpiar</button>
   <div id="transf-confirmado-alert" class="alert alert-success" style="display:none; margin-top: 0.75rem;">
     <span>✓ Transferencias confirmadas. Ya se reflejan en el Cierre.</span>
   </div>
@@ -1010,6 +1010,7 @@ body {
 </div>
 
 </main>
+</div>
 
 <!-- ==================== MODAL CONFIRMACIÓN FINAL DE CIERRE ==================== -->
 <div class="modal-overlay" id="modal-confirm-cierre">
@@ -1047,8 +1048,6 @@ body {
   </div>
 </div>
 
-</div>
-
 <!-- ==================== MODAL RETIRO PREVIEW ==================== -->
 <div class="modal-overlay" id="modal-retiro">
   <div class="modal">
@@ -1068,6 +1067,10 @@ body {
 
 <!-- ==================== NOTIFICATIONS ==================== -->
 <div class="notif-container" id="notifs"></div>
+
+<!-- ==================== ÁREA DE IMPRESIÓN (fuera de cualquier modal,
+     así no hereda paddings/max-height pensados para pantalla) ==================== -->
+<div id="print-area"><div id="print-area-content" class="ticket-preview"></div></div>
 
 <script>
 // ============================================================
@@ -1278,37 +1281,51 @@ function onSubeChange() {
 }
 
 async function confirmarSaldoSube() {
+  // Evita doble-envío: si el botón ya está deshabilitado hay un guardado en
+  // curso, ignoramos clicks repetidos (sino cada click duplicaría la fila
+  // en Sheets)
+  const btn = document.getElementById('btn-confirmar-sube');
+  if (btn.disabled) return;
+
   if (state.sube.aFacturar === 0) {
     notif('Ingresá los saldos primero', 'error');
     return;
   }
-  const resp = await enviarAppsScript({
-    tipo: 'saldo_sube',
-    cajero: state.cajero,
-    turno: state.turno,
-    saldoInicial: state.sube.inicial,
-    saldoFinal: state.sube.final,
-    aFacturar: state.sube.aFacturar
-  });
-  if (resp.status === 'success') {
-    notif('Saldo SUBE confirmado y guardado', 'success');
-    document.getElementById('sube-alert-cierre').style.display = 'flex';
 
-    // Setear flag de confirmado = true
-    state.sube.confirmado = true;
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try {
+    const resp = await enviarAppsScript({
+      tipo: 'saldo_sube',
+      cajero: state.cajero,
+      turno: state.turno,
+      saldoInicial: state.sube.inicial,
+      saldoFinal: state.sube.final,
+      aFacturar: state.sube.aFacturar
+    });
+    if (resp.status === 'success') {
+      notif('Saldo SUBE confirmado y guardado', 'success');
+      document.getElementById('sube-alert-cierre').style.display = 'flex';
 
-    // Recordatorio: facturar el saldo en el sistema de Carga Plus
-    alert('⚠️ Facturá el saldo en el sistema antes de avanzar!');
-    
-    // Limpiar inputs pero mantener el valor en state para panel cierre
-    document.getElementById('sube-inicial').value = '';
-    document.getElementById('sube-final').value = '';
-    
-    // Actualizar panel cierre para que muestre el saldo confirmado
-    actualizarPanelCierre();
-    guardarLocal();
-  } else {
-    notif('Error: ' + resp.message, 'error');
+      // Setear flag de confirmado = true
+      state.sube.confirmado = true;
+
+      // Recordatorio: facturar el saldo en el sistema de Carga Plus
+      alert('⚠️ Facturá el saldo en el sistema antes de avanzar!');
+
+      // Limpiar inputs pero mantener el valor en state para panel cierre
+      document.getElementById('sube-inicial').value = '';
+      document.getElementById('sube-final').value = '';
+
+      // Actualizar panel cierre para que muestre el saldo confirmado
+      actualizarPanelCierre();
+      guardarLocal();
+    } else {
+      notif('Error: ' + resp.message, 'error');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
   }
 }
 
@@ -1361,6 +1378,13 @@ function actualizarListaTransf() {
 }
 
 async function guardarYLimpiarTransferencias() {
+  // Evita doble-envío: si se clickea varias veces antes de que responda el
+  // servidor, cada click volvía a leer la misma lista (todavía sin vaciar) y
+  // sumaba el mismo total una vez por click. Con el botón deshabilitado
+  // mientras hay un guardado en curso, esto ya no puede pasar.
+  const btn = document.getElementById('btn-guardar-transf');
+  if (btn.disabled) return;
+
   // Misma validación que Saldo SUBE y Retiros: sin datos, no se puede confirmar
   if (state.transferencias.length === 0) {
     notif('No hay transferencias para guardar', 'error');
@@ -1368,26 +1392,33 @@ async function guardarYLimpiarTransferencias() {
   }
   const total = state.transferencias.reduce((s, t) => s + t.monto, 0);
 
-  const resp = await enviarAppsScript({
-    tipo: 'transferencias_lote',
-    cajero: state.cajero,
-    turno: state.turno,
-    lista: state.transferencias,
-    total: total
-  });
-  if (resp.status === 'success') {
-    notif('Transferencias guardadas', 'success');
-    // El total confirmado se acumula: puede haber varias tandas de
-    // "Guardar y limpiar" en el mismo turno y todas deben sumar al Cierre
-    state.transferenciasConfirmadas.confirmado = true;
-    state.transferenciasConfirmadas.total += total;
-    state.transferencias = [];
-    guardarLocal();
-    actualizarListaTransf();
-    actualizarBadges();
-    actualizarPanelCierre();
-  } else {
-    notif('Error: ' + resp.message, 'error');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try {
+    const resp = await enviarAppsScript({
+      tipo: 'transferencias_lote',
+      cajero: state.cajero,
+      turno: state.turno,
+      lista: state.transferencias,
+      total: total
+    });
+    if (resp.status === 'success') {
+      notif('Transferencias guardadas', 'success');
+      // El total confirmado se acumula: puede haber varias tandas de
+      // "Guardar y limpiar" en el mismo turno y todas deben sumar al Cierre
+      state.transferenciasConfirmadas.confirmado = true;
+      state.transferenciasConfirmadas.total += total;
+      state.transferencias = [];
+      guardarLocal();
+      actualizarListaTransf();
+      actualizarBadges();
+      actualizarPanelCierre();
+    } else {
+      notif('Error: ' + resp.message, 'error');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
   }
 }
 
@@ -1538,6 +1569,11 @@ function renderTicketPreview() {
 }
 
 async function confirmarRetiro() {
+  // Evita doble-envío: un click repetido antes de que responda el servidor
+  // duplicaría el retiro (mismo monto, número consecutivo distinto)
+  const btn = document.getElementById('btn-confirmar-retiro');
+  if (btn.disabled) return;
+
   const tipo = document.getElementById('retiro-tipo').value;
   const concepto = document.getElementById('retiro-concepto').value.trim();
   const autoriza = document.getElementById('retiro-autoriza').value.trim();
@@ -1559,32 +1595,40 @@ async function confirmarRetiro() {
     timestamp: now.toISOString()
   };
 
-  const resp = await enviarAppsScript({ tipo: 'retiro', ...retiro });
-  if (resp.status !== 'success') {
-    notif('Error: ' + resp.message, 'error');
-    return;
-  }
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try {
+    const resp = await enviarAppsScript({ tipo: 'retiro', ...retiro });
+    if (resp.status !== 'success') {
+      notif('Error: ' + resp.message, 'error');
+      return;
+    }
 
-  state.retiros.push(retiro);
-  // Un nuevo retiro invalida la confirmación previa del total: hay que reconfirmar
-  state.retirosConfirmados.confirmado = false;
-  guardarLocal();
-  actualizarListaRetiros();
-  actualizarBadges();
-  actualizarPanelCierre();
+    state.retiros.push(retiro);
+    // Un nuevo retiro invalida la confirmación previa del total: hay que reconfirmar
+    state.retirosConfirmados.confirmado = false;
+    guardarLocal();
+    actualizarListaRetiros();
+    actualizarBadges();
+    actualizarPanelCierre();
 
-  if (tipo !== 'Cierre') {
-    navigator.clipboard.writeText(fmtNumeroPlano(monto)).catch(() => {});
-    notif(`Retiro ${numero} guardado y copiado`, 'success');
-    imprimirRetiro();
-  } else {
-    notif(`Retiro de Cierre registrado: ${fmtMoneda(monto)}`, 'success');
-    cerrarModalRetiro();
-    resetFormRetiro();
+    if (tipo !== 'Cierre') {
+      navigator.clipboard.writeText(fmtNumeroPlano(monto)).catch(() => {});
+      notif(`Retiro ${numero} guardado y copiado`, 'success');
+      imprimirRetiro();
+    } else {
+      notif(`Retiro de Cierre registrado: ${fmtMoneda(monto)}`, 'success');
+      cerrarModalRetiro();
+      resetFormRetiro();
+    }
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
   }
 }
 
 function imprimirRetiro() {
+  document.getElementById('print-area-content').innerHTML = document.getElementById('ticket-preview').innerHTML;
   window.print();
   setTimeout(() => {
     cerrarModalRetiro();
@@ -1739,6 +1783,11 @@ function cerrarModalConfirmacionFinal() {
 }
 
 async function confirmarCierreFinal() {
+  // Evita doble-envío: un click repetido antes de que responda el servidor
+  // registraría dos cierres iguales en Sheets
+  const btn = document.getElementById('btn-final-confirm');
+  if (btn.disabled) return;
+
   const delTurno = state.retiros.filter(r => r.turno === state.turno);
   const totalRetiros = state.retirosConfirmados.confirmado ? state.retirosConfirmados.total : 0;
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
@@ -1759,20 +1808,27 @@ async function confirmarCierreFinal() {
     notas: state.cierre.notas
   };
 
-  const resp = await enviarAppsScript(datos);
-  if (resp.status !== 'success') {
-    notif('Error: ' + resp.message, 'error');
-    return;
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  try {
+    const resp = await enviarAppsScript(datos);
+    if (resp.status !== 'success') {
+      notif('Error: ' + resp.message, 'error');
+      return;
+    }
+
+    // Preparar datos para preview e impresión
+    state.cierre.datosGuardados = datos;
+    state.cierre.retirosGuardados = delTurno;
+
+    cerrarModalConfirmacionFinal();
+    abrirModalPreviewCierre(datos, delTurno);
+
+    notif('Cierre guardado', 'success');
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '1';
   }
-
-  // Preparar datos para preview e impresión
-  state.cierre.datosGuardados = datos;
-  state.cierre.retirosGuardados = delTurno;
-
-  cerrarModalConfirmacionFinal();
-  abrirModalPreviewCierre(datos, delTurno);
-
-  notif('Cierre guardado', 'success');
 }
 
 function abrirModalPreviewCierre(datos, retiros) {
@@ -1827,6 +1883,7 @@ function cerrarModalPreviewCierre() {
 }
 
 function imprimirCierre() {
+  document.getElementById('print-area-content').innerHTML = document.getElementById('preview-cierre-content').innerHTML;
   window.print();
   setTimeout(() => {
     cerrarModalPreviewCierre();
