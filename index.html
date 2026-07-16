@@ -133,9 +133,10 @@ body {
 }
 
 .turno-toggle button.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.4);
 }
 
 /* ===== TABS ===== */
@@ -760,13 +761,14 @@ body {
   .modal-overlay.active .modal-footer { display: none !important; }
   .modal-overlay.active .modal-body { padding: 0; max-height: 100%; overflow: visible; }
 
-  /* Ticket: ancho 80mm, largo mínimo 210mm (crece si el contenido es más
-     largo), letras más grandes y en negro puro para que salgan nítidas
-     en la impresora térmica */
+  /* Ticket: área de impresión de 77mm (con margen de seguridad dentro del
+     rollo de 80mm), largo mínimo 210mm (crece si el contenido es más largo),
+     letras más grandes y en negro puro para que salgan nítidas en la
+     impresora térmica */
   .ticket-preview {
-    width: 80mm;
+    width: 77mm;
     min-height: 210mm;
-    margin: 0;
+    margin: 0 auto;
     padding: 4mm 3mm;
     border: none;
     box-sizing: border-box;
@@ -1090,7 +1092,7 @@ let state = {
   transferenciasConfirmadas: { total: 0, confirmado: false },
   retiros: [],
   retirosConfirmados: { total: 0, confirmado: false },
-  cierre: { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false }
+  cierre: { credito: 0, debito: 0, notas: '', confirmado: false }
 };
 
 // ============================================================
@@ -1670,32 +1672,8 @@ function guardarCierreLocal() {
   guardarLocal();
 }
 
-// Chequeo simple y directo: al momento de confirmar el cierre, se pregunta
-// al backend si ya existe uno para hoy. Si existe, un aviso bloqueante (igual
-// que el de "facturar SUBE") obliga al cajero a confirmar antes de seguir,
-// evitando cierres duplicados por descuido sin la complejidad de deshabilitar
-// botones en toda la app.
-async function verificarCierreDuplicado() {
-  const resp = await consultarAppsScript({ tipo: 'cierre_existe', turno: state.turno });
-
-  if (resp.status === 'success' && resp.data && resp.data.existe && resp.data.esHoy) {
-    const d = resp.data;
-    const continuar = confirm(
-      `⚠️ Ya existe un cierre registrado HOY para el turno ${state.turno}\n\n` +
-      `Hora: ${d.hora} hs\nCajero: ${d.cajero}\nTotal: ${fmtMoneda(d.total || 0)}\n\n` +
-      `Si continuás vas a registrar un cierre DUPLICADO.\n¿Confirmás que necesitás continuar?`
-    );
-    return { esDuplicado: true, continuar: continuar };
-  }
-  return { esDuplicado: false, continuar: true };
-}
-
-async function abrirModalConfirmacionFinal() {
+function abrirModalConfirmacionFinal() {
   guardarCierreLocal();
-
-  const dup = await verificarCierreDuplicado();
-  if (!dup.continuar) return;
-  state.cierre.esDesbloqueo = dup.esDuplicado;
 
   // Validar valores antes de abrir modal
   const alertas = validarValoresAutomaticos();
@@ -1713,10 +1691,6 @@ async function abrirModalConfirmacionFinal() {
 
   const html = `
     <div style="margin-bottom: 1.5rem;">
-      ${state.cierre.esDesbloqueo ? `<div class="alert alert-warning" style="margin-bottom: 1rem;">
-        ⚠️ Vas a crear un <strong>SEGUNDO cierre</strong> para el ${state.turno} de hoy. Asegúrate de que sea necesario.
-      </div>` : ''}
-
       <div class="section-title">Resumen de medios</div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; font-size: 13px;">
         <div>
@@ -1762,7 +1736,6 @@ async function abrirModalConfirmacionFinal() {
 
 function cerrarModalConfirmacionFinal() {
   document.getElementById('modal-confirm-cierre').classList.remove('active');
-  state.cierre.esDesbloqueo = false;
 }
 
 async function confirmarCierreFinal() {
@@ -1783,8 +1756,7 @@ async function confirmarCierreFinal() {
     tarjetaCredito: state.cierre.credito,
     tarjetaDebito: state.cierre.debito,
     cantidadRetiros: delTurno.length,
-    notas: state.cierre.notas,
-    cierreDuplicado: state.cierre.esDesbloqueo || false
+    notas: state.cierre.notas
   };
 
   const resp = await enviarAppsScript(datos);
@@ -1800,11 +1772,7 @@ async function confirmarCierreFinal() {
   cerrarModalConfirmacionFinal();
   abrirModalPreviewCierre(datos, delTurno);
 
-  if (state.cierre.esDesbloqueo) {
-    notif('Cierre duplicado registrado', 'warning');
-  } else {
-    notif('Cierre guardado', 'success');
-  }
+  notif('Cierre guardado', 'success');
 }
 
 function abrirModalPreviewCierre(datos, retiros) {
@@ -1849,10 +1817,6 @@ function abrirModalPreviewCierre(datos, retiros) {
     <div class="ticket-sign-line">Firma del responsable</div>
   `;
 
-  if (datos.cierreDuplicado) {
-    html += `<div style="margin-top: 10px; padding: 8px; background: var(--warning-bg); border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 10px; color: var(--warning-text); text-align: center;">⚠️ CIERRE DUPLICADO - Se registró un cierre anterior hoy.</div>`;
-  }
-
   document.getElementById('preview-cierre-content').innerHTML = html;
   document.getElementById('modal-preview-cierre').classList.add('active');
 }
@@ -1876,7 +1840,7 @@ function limpiarDespuesDelCierre() {
   state.transferenciasConfirmadas = { total: 0, confirmado: false };
   state.retiros = state.retiros.filter(r => r.turno !== state.turno);
   state.retirosConfirmados = { total: 0, confirmado: false };
-  state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false };
+  state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false };
   guardarLocal();
 
   document.getElementById('sube-inicial').value = '';
