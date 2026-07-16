@@ -739,6 +739,12 @@ body {
 }
 
 @media print {
+  /* Ancho fijo de rollo térmico (80mm), alto automático según contenido */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
   body { margin: 0; padding: 0; background: white; }
   .app { max-width: 100%; margin: 0; border: none; }
   .header, .tabs, .tab, main > *, .notif-container { display: none !important; }
@@ -753,7 +759,37 @@ body {
   .modal-overlay.active .modal-header,
   .modal-overlay.active .modal-footer { display: none !important; }
   .modal-overlay.active .modal-body { padding: 0; max-height: 100%; overflow: visible; }
-  .ticket-preview { font-size: 10px; width: 80mm; margin: 0 auto; }
+
+  /* Ticket: ancho 80mm, largo mínimo 210mm (crece si el contenido es más
+     largo), letras más grandes y en negro puro para que salgan nítidas
+     en la impresora térmica */
+  .ticket-preview {
+    width: 80mm;
+    min-height: 210mm;
+    margin: 0;
+    padding: 4mm 3mm;
+    border: none;
+    box-sizing: border-box;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #000 !important;
+  }
+  .ticket-brand { font-size: 17px; }
+  .ticket-sub,
+  .ticket-line,
+  .ticket-line .k,
+  .ticket-item-row,
+  .ticket-item-row .n,
+  .ticket-notes,
+  .ticket-section,
+  .ticket-sign-line,
+  .ticket-amount-label {
+    font-size: 13px;
+    color: #000 !important;
+  }
+  .ticket-amount { font-size: 26px; }
+  .ticket-divider { border-top-color: #000; }
+  .ticket-sign-line { border-top-color: #000; }
 }
 </style>
 </head>
@@ -928,53 +964,6 @@ body {
     <span>Los campos automáticos se calculan a partir de las otras pestañas. Completá tarjetas y confirmá el cierre.</span>
   </div>
 
-  <!-- ALERTA DE CIERRE DUPLICADO (BLOQUEANTE) -->
-  <div id="cierre-duplicado-alert" class="alert" style="display:none; background: var(--danger-bg); border: 2px solid var(--danger); padding: 1.5rem; margin-bottom: 1.5rem;">
-    <div style="font-size: 16px; font-weight: 600; color: var(--danger); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px;">
-      🚫 CIERRE YA EXISTE - BLOQUEADO
-    </div>
-    <div style="font-size: 13px; color: var(--danger-text); line-height: 1.6; margin-bottom: 1rem;">
-      Ya existe un cierre confirmado para el <strong id="cierre-dup-turno">Turno Mañana</strong> de hoy. No se puede cargar más datos ni registrar otro cierre bajo estas condiciones.
-    </div>
-    <div style="background: rgba(220,38,38,0.1); padding: 12px; border-radius: 8px; margin-bottom: 1rem; font-size: 12px;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-        <span style="color: var(--text-secondary);">Cierre anterior:</span>
-        <span style="font-weight: 500; font-family: 'Courier New', monospace;" id="cierre-dup-hora">15:35 hs</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-        <span style="color: var(--text-secondary);">Registrado por:</span>
-        <span style="font-weight: 500; font-family: 'Courier New', monospace;" id="cierre-dup-cajero">Silvio</span>
-      </div>
-      <div style="display: flex; justify-content: space-between;">
-        <span style="color: var(--text-secondary);">Total:</span>
-        <span style="font-weight: 500; font-family: 'Courier New', monospace;" id="cierre-dup-total">$38.500</span>
-      </div>
-    </div>
-
-    <div style="background: var(--surface-2); border-radius: 8px; padding: 12px; margin-bottom: 1rem;">
-      <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Para continuar (opcional)</div>
-      <div style="display: flex; gap: 10px; align-items: flex-start;">
-        <input type="checkbox" id="confirm-override" onchange="toggleBtnDesbloqueo()" style="margin-top: 3px; cursor: pointer; width: 18px; height: 18px;">
-        <label for="confirm-override" style="font-size: 13px; line-height: 1.5; color: var(--text-secondary); cursor: pointer;">
-          Entiendo que estoy <strong style="color: var(--danger);">creando un cierre duplicado</strong>. He revisado el cierre anterior y necesito hacer uno nuevo. <strong style="color: var(--danger);">Asumo la responsabilidad</strong> de esta acción.
-        </label>
-      </div>
-    </div>
-
-    <div style="display: flex; gap: 8px;">
-      <button class="btn" style="flex: 1; background: var(--surface-2); border: 1px solid var(--border);" onclick="limpiarCheckboxDesbloqueo()">Volver atrás</button>
-      <button class="btn" id="btn-desbloqueo" style="flex: 1; background: var(--danger); color: white; border: 1px solid var(--danger); cursor: not-allowed; opacity: 0.5;" disabled onclick="abrirModalConfirmacionFinal(true)">🔓 Desbloquear</button>
-    </div>
-
-    <div style="background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--accent-text); line-height: 1.5; margin-top: 1rem;">
-      💡 <strong>Nota:</strong> Si desbloqueas, se registrará un cierre duplicado en Sheets. Usá solo en caso de error o corrección necesaria.
-    </div>
-  </div>
-
-  <div id="cierre-warn" class="alert alert-warning" style="display:none;">
-    <span id="cierre-warn-text">Ya se registró un cierre para este turno hoy.</span>
-  </div>
-
   <div class="section-title">Medios de pago</div>
 
   <div class="medio-grid">
@@ -1015,7 +1004,7 @@ body {
     <textarea id="cierre-notas" placeholder="Observaciones..." oninput="guardarCierreLocal()"></textarea>
   </div>
 
-  <button class="btn btn-primary" id="btn-confirmar-cierre" onclick="abrirModalConfirmacionFinal(false)">Confirmar cierre e imprimir</button>
+  <button class="btn btn-primary" id="btn-confirmar-cierre" onclick="abrirModalConfirmacionFinal()">Confirmar cierre e imprimir</button>
 </div>
 
 </main>
@@ -1248,8 +1237,6 @@ function setTurno(t) {
   document.getElementById('btn-tarde').classList.toggle('active', t === 'Tarde');
   guardarLocal();
   actualizarPanelCierre();
-  // Verificar cierre del nuevo turno (puede desbloquear automáticamente si es otro día)
-  verificarCierreExistente();
 }
 
 function switchTab(id) {
@@ -1327,12 +1314,6 @@ async function confirmarSaldoSube() {
 // TRANSFERENCIAS
 // ============================================================
 function agregarTransferencia() {
-  // Validar si el turno está bloqueado
-  if (document.getElementById('btn-confirmar-cierre').disabled) {
-    notif('Turno cerrado. Cambiar a otro turno para continuar.', 'error');
-    return;
-  }
-  
   const input = document.getElementById('transf-input');
   const monto = parseFloat(input.value);
   if (!monto || monto <= 0) {
@@ -1471,12 +1452,6 @@ function calcularDenominaciones() {
 }
 
 function abrirModalRetiro() {
-  // Validar si el turno está bloqueado
-  if (document.getElementById('btn-confirmar-cierre').disabled) {
-    notif('Turno cerrado. Cambiar a otro turno para continuar.', 'error');
-    return;
-  }
-  
   const { monto } = calcularDenominaciones();
   if (monto === 0) {
     notif('Ingresá al menos un billete', 'error');
@@ -1695,127 +1670,37 @@ function guardarCierreLocal() {
   guardarLocal();
 }
 
-async function verificarCierreExistente() {
+// Chequeo simple y directo: al momento de confirmar el cierre, se pregunta
+// al backend si ya existe uno para hoy. Si existe, un aviso bloqueante (igual
+// que el de "facturar SUBE") obliga al cajero a confirmar antes de seguir,
+// evitando cierres duplicados por descuido sin la complejidad de deshabilitar
+// botones en toda la app.
+async function verificarCierreDuplicado() {
   const resp = await consultarAppsScript({ tipo: 'cierre_existe', turno: state.turno });
-  const alertaDuplicado = document.getElementById('cierre-duplicado-alert');
-  const btnConfirmar = document.getElementById('btn-confirmar-cierre');
-  
-  if (resp.status === 'success' && resp.data && resp.data.existe) {
-    // El backend ya calculó si el cierre es de hoy (evita comparar fechas
-    // en el cliente, poco confiable si Sheets autoconvierte la columna Fecha)
-    const esHoy = resp.data.esHoy;
 
-    if (esHoy) {
-      // MISMO DÍA → BLOQUEAR
-      bloquearTurno(resp.data);
-    } else {
-      // OTRO DÍA → DESBLOQUEAR automáticamente
-      desbloquearTurno();
-      resetearEstadoDelTurno();
-    }
-  } else {
-    // Sin cierre previo → DESBLOQUEADO
-    desbloquearTurno();
+  if (resp.status === 'success' && resp.data && resp.data.existe && resp.data.esHoy) {
+    const d = resp.data;
+    const continuar = confirm(
+      `⚠️ Ya existe un cierre registrado HOY para el turno ${state.turno}\n\n` +
+      `Hora: ${d.hora} hs\nCajero: ${d.cajero}\nTotal: ${fmtMoneda(d.total || 0)}\n\n` +
+      `Si continuás vas a registrar un cierre DUPLICADO.\n¿Confirmás que necesitás continuar?`
+    );
+    return { esDuplicado: true, continuar: continuar };
   }
+  return { esDuplicado: false, continuar: true };
 }
 
-function bloquearTurno(datoCierre) {
-  const alertaDuplicado = document.getElementById('cierre-duplicado-alert');
-  const btnConfirmar = document.getElementById('btn-confirmar-cierre');
-  
-  alertaDuplicado.style.display = 'block';
-  document.getElementById('cierre-dup-turno').textContent = `Turno ${state.turno}`;
-  document.getElementById('cierre-dup-hora').textContent = datoCierre.hora + ' hs';
-  document.getElementById('cierre-dup-cajero').textContent = datoCierre.cajero;
-  document.getElementById('cierre-dup-total').textContent = fmtMoneda(datoCierre.total || 0);
-  
-  btnConfirmar.disabled = true;
-  btnConfirmar.style.opacity = '0.5';
-  btnConfirmar.style.cursor = 'not-allowed';
-  
-  deshabilitarBotonesCarga();
-  limpiarCheckboxDesbloqueo();
-}
-
-function desbloquearTurno() {
-  const alertaDuplicado = document.getElementById('cierre-duplicado-alert');
-  const btnConfirmar = document.getElementById('btn-confirmar-cierre');
-  
-  alertaDuplicado.style.display = 'none';
-  btnConfirmar.disabled = false;
-  btnConfirmar.style.opacity = '1';
-  btnConfirmar.style.cursor = 'pointer';
-  
-  habilitarBotonesCarga();
-  limpiarCheckboxDesbloqueo();
-}
-
-function deshabilitarBotonesCarga() {
-  document.getElementById('sube-inicial').disabled = true;
-  document.getElementById('sube-final').disabled = true;
-  const btnConfirmarSube = document.querySelector('button[onclick="confirmarSaldoSube()"]');
-  if (btnConfirmarSube) { btnConfirmarSube.disabled = true; btnConfirmarSube.style.opacity = '0.5'; }
-  
-  const btnAgregarTransf = document.querySelector('button[onclick="agregarTransferencia()"]');
-  if (btnAgregarTransf) { btnAgregarTransf.disabled = true; btnAgregarTransf.style.opacity = '0.5'; }
-  document.getElementById('transf-input').disabled = true;
-  
-  const btnConfirmarRetiro = document.querySelector('button[onclick="abrirModalRetiro()"]');
-  if (btnConfirmarRetiro) { btnConfirmarRetiro.disabled = true; btnConfirmarRetiro.style.opacity = '0.5'; }
-}
-
-function habilitarBotonesCarga() {
-  document.getElementById('sube-inicial').disabled = false;
-  document.getElementById('sube-final').disabled = false;
-  const btnConfirmarSube = document.querySelector('button[onclick="confirmarSaldoSube()"]');
-  if (btnConfirmarSube) { btnConfirmarSube.disabled = false; btnConfirmarSube.style.opacity = '1'; }
-  
-  const btnAgregarTransf = document.querySelector('button[onclick="agregarTransferencia()"]');
-  if (btnAgregarTransf) { btnAgregarTransf.disabled = false; btnAgregarTransf.style.opacity = '1'; }
-  document.getElementById('transf-input').disabled = false;
-  
-  const btnConfirmarRetiro = document.querySelector('button[onclick="abrirModalRetiro()"]');
-  if (btnConfirmarRetiro) { btnConfirmarRetiro.disabled = false; btnConfirmarRetiro.style.opacity = '1'; }
-}
-
-function resetearEstadoDelTurno() {
-  // Limpiar datos del turno cuando se detecta que es un día diferente
-  state.sube = { inicial: 0, final: 0, aFacturar: 0, confirmado: false };
-  state.transferencias = [];
-  state.transferenciasConfirmadas = { total: 0, confirmado: false };
-  state.retiros = [];
-  state.retirosConfirmados = { total: 0, confirmado: false };
-  state.cierre = { credito: 0, debito: 0, notas: '', confirmado: false, esDesbloqueo: false };
-  guardarLocal();
-
-  document.getElementById('sube-inicial').value = '';
-  document.getElementById('sube-final').value = '';
-  actualizarListaTransf();
-  actualizarListaRetiros();
-  actualizarBadges();
-  actualizarPanelCierre();
-}
-
-function toggleBtnDesbloqueo() {
-  const checked = document.getElementById('confirm-override').checked;
-  const btn = document.getElementById('btn-desbloqueo');
-  btn.disabled = !checked;
-  btn.style.opacity = checked ? '1' : '0.5';
-  btn.style.cursor = checked ? 'pointer' : 'not-allowed';
-}
-
-function limpiarCheckboxDesbloqueo() {
-  document.getElementById('confirm-override').checked = false;
-  toggleBtnDesbloqueo();
-}
-
-function abrirModalConfirmacionFinal(esDesbloqueo) {
+async function abrirModalConfirmacionFinal() {
   guardarCierreLocal();
-  
+
+  const dup = await verificarCierreDuplicado();
+  if (!dup.continuar) return;
+  state.cierre.esDesbloqueo = dup.esDuplicado;
+
   // Validar valores antes de abrir modal
   const alertas = validarValoresAutomaticos();
-  
-  if (alertas.length > 0 && !esDesbloqueo) {
+
+  if (alertas.length > 0) {
     mostrarAlertasValidacion(alertas);
     return;
   }
@@ -1826,14 +1711,12 @@ function abrirModalConfirmacionFinal(esDesbloqueo) {
   const retiroCierre = delTurno.find(r => r.tipoRetiro === 'Cierre');
   const efectivo = retiroCierre ? retiroCierre.monto : 0;
 
-  state.cierre.esDesbloqueo = esDesbloqueo;
-
   const html = `
     <div style="margin-bottom: 1.5rem;">
-      ${esDesbloqueo ? `<div class="alert alert-warning" style="margin-bottom: 1rem;">
+      ${state.cierre.esDesbloqueo ? `<div class="alert alert-warning" style="margin-bottom: 1rem;">
         ⚠️ Vas a crear un <strong>SEGUNDO cierre</strong> para el ${state.turno} de hoy. Asegúrate de que sea necesario.
       </div>` : ''}
-      
+
       <div class="section-title">Resumen de medios</div>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; font-size: 13px;">
         <div>
@@ -2003,7 +1886,6 @@ function limpiarDespuesDelCierre() {
   actualizarListaRetiros();
   actualizarBadges();
   actualizarPanelCierre();
-  verificarCierreExistente();
 
   notif('Datos del turno limpios. Listo para el próximo.', 'success');
 }
@@ -2037,8 +1919,7 @@ function mostrarAlertasValidacion(alertas) {
   msg += '\n¿Continuar de todas formas?';
   
   if (confirm(msg)) {
-    // Permitir continuar
-    state.cierre.esDesbloqueo = false;
+    // Permitir continuar (mantiene el flag de duplicado ya calculado antes)
     const totalTransf = state.transferenciasConfirmadas.confirmado ? state.transferenciasConfirmadas.total : 0;
     const delTurno = state.retiros.filter(r => r.turno === state.turno);
     const totalRetiros = state.retirosConfirmados.confirmado ? state.retirosConfirmados.total : 0;
@@ -2114,7 +1995,6 @@ function init() {
   actualizarPanelCierre();
   actualizarDatetime();
   setInterval(actualizarDatetime, 60000);
-  verificarCierreExistente();
 
   document.getElementById('modal-retiro').addEventListener('click', e => {
     if (e.target.id === 'modal-retiro') cerrarModalRetiro();
